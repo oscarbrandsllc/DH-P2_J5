@@ -177,12 +177,19 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             mainContent?.addEventListener('click', handleAssetClickForTrade);
 
             tradeSimulator.addEventListener('click', (e) => {
-                if (e.target.closest('#comparePlayersButton')) {
-                    const selectedPlayers = Object.values(state.tradeBlock).flat().filter(asset => asset.pos !== 'DP');
-                    if (selectedPlayers.length !== 2) {
-                        showTemporaryTooltip(e.target.closest('#comparePlayersButton'), 'Please select exactly 2 players to compare.');
+                const compareButton = e.target.closest('#comparePlayersButton');
+                if (compareButton) {
+                    const isModalOpen = !playerComparisonModal.classList.contains('hidden');
+
+                    if (isModalOpen) {
+                        closeComparisonModal();
                     } else {
-                        handlePlayerCompare(e);
+                        const selectedPlayers = Object.values(state.tradeBlock).flat().filter(asset => asset.pos !== 'DP');
+                        if (selectedPlayers.length !== 2) {
+                            showTemporaryTooltip(compareButton, 'Please select exactly 2 players to compare.');
+                        } else {
+                            handlePlayerCompare(e);
+                        }
                     }
                 }
             });
@@ -396,11 +403,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     rosterView.classList.remove('is-trade-mode');
                     rosterGrid.classList.remove('is-preview-mode');
 
-                    state.tradeBlock = {};
-                    closeComparisonModal();
+                    clearTrade();
 
                     renderAllTeamData(state.currentTeams);
-                    renderTradeBlock();
                     updateHeaderPreviewState();
 
                 } else {
@@ -440,7 +445,11 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             rosterGrid.classList.toggle('is-preview-mode', state.isCompareMode);
             updateCompareButtonState();
             renderAllTeamData(state.currentTeams); 
-            renderTradeBlock();
+            if (!state.isCompareMode) {
+                clearTrade();
+            } else {
+                renderTradeBlock();
+            }
             updateHeaderPreviewState();
         }
 
@@ -1664,7 +1673,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             row.innerHTML = `
                 <div class="player-main-line">
                     <div class="player-tag" style="background-color: ${TAG_COLORS[displaySlot] || 'var(--pos-bn)'};">${displaySlot}</div>
-                    <div class="player-name">${player.name}</div>
+                    <div class="player-name"><span class="player-name-clickable">${player.name}</span></div>
                 </div>
                 <div class="player-meta-line">
                     <span class="player-pos-rank" style="color: ${posRankColor}; font-weight: 400;">${player.posRank || player.pos}</span>
@@ -1684,10 +1693,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             if (adpEl && player.adp) adpEl.style.color = getAdpColorForRoster(parseFloat(adp));
             if (ktcEl && player.ktc) ktcEl.style.color = getKtcColor(player.ktc);
 
-            const playerNameEl = row.querySelector('.player-name');
-            if (playerNameEl) {
-                playerNameEl.style.cursor = 'pointer';
-                playerNameEl.addEventListener('click', (e) => {
+            const playerNameClickableEl = row.querySelector('.player-name-clickable');
+            if (playerNameClickableEl) {
+                playerNameClickableEl.style.cursor = 'pointer';
+                playerNameClickableEl.addEventListener('click', (e) => {
                     e.stopPropagation();
                     handlePlayerNameClick(player);
                 });
@@ -1841,6 +1850,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 tradeSimulator.classList.add('collapsed');
                 state.isTradeCollapsed = true;
                 mainContent.style.paddingBottom = `${tradeSimulator.offsetHeight + 20}px`;
+                closeComparisonModal();
             });
             document.getElementById('showTradeButton').addEventListener('click', () => {
                 tradeSimulator.classList.remove('collapsed');
@@ -2174,6 +2184,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 if (comparisonBackgroundOverlay) {
                     comparisonBackgroundOverlay.classList.remove('hidden');
                 }
+                if (rosterGrid) {
+                    rosterGrid.classList.add('hidden');
+                }
             }
         }
 
@@ -2192,6 +2205,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const comparisonModalBody = document.getElementById('comparison-modal-body');
                 if (comparisonModalBody) {
                     comparisonModalBody.innerHTML = '';
+                }
+                if (rosterGrid) {
+                    rosterGrid.classList.remove('hidden');
                 }
             }
         }

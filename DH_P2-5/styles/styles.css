@@ -701,9 +701,11 @@
             color: #d0d1ee;
             line-height: 1.2;
             white-space: nowrap !important;
-            text-decoration: underline;
-            text-decoration-color: #9096D090;
         }
+    .player-name-clickable {
+        text-decoration: underline;
+        text-decoration-color: #9096D090;
+    }
         .player-tag {
             display: inline-flex;
             align-items: center;
