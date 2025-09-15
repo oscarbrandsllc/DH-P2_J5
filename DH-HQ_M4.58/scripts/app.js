@@ -2157,6 +2157,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     modalContent.style.height = '';
                     modalContent.style.bottom = '';
                 }
+                const comparisonModalBody = document.getElementById('comparison-modal-body');
+                if (comparisonModalBody) comparisonModalBody.innerHTML = '';
                 playerComparisonModal.classList.add('hidden');
             }
             comparisonOverlay?.classList.add('hidden');
