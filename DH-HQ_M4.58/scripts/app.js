@@ -35,6 +35,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         const modalPlayerName = document.getElementById('modal-player-name');
         const modalBody = document.getElementById('modal-body');
         const playerComparisonModal = document.getElementById('player-comparison-modal');
+        const comparisonOverlay = document.getElementById('comparison-overlay');
 
         // --- Menu Button ---
         const menuButton = document.getElementById('menu-button');
@@ -208,9 +209,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             if (playerComparisonModal) {
                 const closeBtn = playerComparisonModal.querySelector('.modal-close-btn');
-                const overlay = playerComparisonModal.querySelector('.modal-overlay');
                 if (closeBtn) closeBtn.addEventListener('click', () => closeComparisonModal());
-                if (overlay) overlay.addEventListener('click', () => closeComparisonModal());
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && !playerComparisonModal.classList.contains('hidden')) {
                         closeComparisonModal();
@@ -386,15 +385,15 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const isSelected = state.teamsToCompare.has(teamName);
 
                 if (isSelected) {
-                    // If a team is deselected, hide the trade preview
+                    // If a team is deselected, hide the trade preview and clear selections
                     state.teamsToCompare.delete(teamName);
                     checkbox.classList.remove('selected');
 
                     state.isCompareMode = false;
+                    clearTrade();
                     rosterView.classList.remove('is-trade-mode');
                     rosterGrid.classList.remove('is-preview-mode');
                     renderAllTeamData(state.currentTeams);
-                    renderTradeBlock();
                     updateHeaderPreviewState();
 
                 } else {
@@ -2146,6 +2145,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
 
                 playerComparisonModal.classList.remove('hidden');
+                comparisonOverlay?.classList.remove('hidden');
             }
         }
 
@@ -2159,7 +2159,17 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
                 playerComparisonModal.classList.add('hidden');
             }
+            comparisonOverlay?.classList.add('hidden');
         }
+
+        comparisonOverlay?.addEventListener('click', closeComparisonModal);
+
+        document.addEventListener('click', (e) => {
+            if (!playerComparisonModal || playerComparisonModal.classList.contains('hidden')) return;
+            if (playerComparisonModal.contains(e.target)) return;
+            if (tradeSimulator && tradeSimulator.contains(e.target)) return;
+            closeComparisonModal();
+        });
 
         function setLoading(isLoading, message = 'Loading...') {
             welcomeScreen?.classList.add('hidden');
