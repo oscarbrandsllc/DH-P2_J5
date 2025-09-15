@@ -2145,7 +2145,6 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         function openComparisonModal() {
             if (playerComparisonModal) {
                 const modalContent = playerComparisonModal.querySelector('.modal-content');
-                const overlay = playerComparisonModal.querySelector('.modal-overlay');
                 const header = document.getElementById('header-container');
                 const tradePreview = document.getElementById('tradeSimulator');
 
@@ -2162,25 +2161,18 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
 
                 playerComparisonModal.classList.remove('hidden');
-                if (overlay) {
-                    overlay.classList.add('modal-overlay-visible');
-                }
             }
         }
 
         function closeComparisonModal() {
             if (playerComparisonModal) {
                 const modalContent = playerComparisonModal.querySelector('.modal-content');
-                const overlay = playerComparisonModal.querySelector('.modal-overlay');
                 if (modalContent) {
                     modalContent.style.top = '';
                     modalContent.style.height = '';
                     modalContent.style.bottom = '';
                 }
                 playerComparisonModal.classList.add('hidden');
-                if (overlay) {
-                    overlay.classList.remove('modal-overlay-visible');
-                }
                 clearTrade();
             }
         }
