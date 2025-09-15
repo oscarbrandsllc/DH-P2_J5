@@ -53,6 +53,18 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             if (dropdownMenu && !dropdownMenu.classList.contains('hidden') && !menuButton.contains(e.target)) {
                 dropdownMenu.classList.add('hidden');
             }
+
+            // Close player comparison modal on outside click
+            if (playerComparisonModal && !playerComparisonModal.classList.contains('hidden')) {
+                const isClickInsideModal = playerComparisonModal.contains(e.target);
+                const isClickInsideTradePreview = tradeSimulator.contains(e.target);
+                const isClickInsideHeader = document.getElementById('header-container').contains(e.target);
+                const isClickOnCompareButton = e.target.closest('#comparePlayersButton');
+
+                if (!isClickInsideModal && !isClickInsideTradePreview && !isClickInsideHeader && !isClickOnCompareButton) {
+                    closeComparisonModal();
+                }
+            }
         });
 
         menuRosters?.addEventListener('click', () => {
@@ -390,6 +402,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     state.teamsToCompare.delete(teamName);
                     checkbox.classList.remove('selected');
 
+                    // Clear the trade block and selections
+                    clearTrade();
+
                     state.isCompareMode = false;
                     rosterView.classList.remove('is-trade-mode');
                     rosterGrid.classList.remove('is-preview-mode');
@@ -452,7 +467,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             rosterGrid.classList.remove('is-preview-mode');
             
             updateCompareButtonState();
-            clearTrade();
+            clearTrade(); // This will clear the trade block and player selections
             if (state.currentTeams) {
                 renderAllTeamData(state.currentTeams);
             }
@@ -2158,6 +2173,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     modalContent.style.bottom = '';
                 }
                 playerComparisonModal.classList.add('hidden');
+                clearTrade();
             }
         }
 

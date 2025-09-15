@@ -3453,7 +3453,14 @@ img.team-logo.glow[alt="WAS"] {
   background: transparent;/* no backdrop for this modal */
 }
 #player-comparison-modal .modal-overlay {
-  display: none;          /* hide dim overlay for this modal */
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 12;
 }
 #player-comparison-modal .modal-content {
   position: fixed;        /* we’ll set top/height via JS in openComparisonModal() */
