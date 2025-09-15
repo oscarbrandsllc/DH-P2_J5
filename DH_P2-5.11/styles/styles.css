@@ -2363,6 +2363,12 @@ font-weight: 500 !important;
         color: #B469FFca; /*  TE color */
         box-shadow: inset 0 0 10px #B469FF26;   /* TE border */
     }
+
+    .modal-team-logo {
+        position: absolute;
+        top: 0.70rem;
+        left: 4.2rem;
+    }
     
     /* · · Modal Header · · */    
     #modal-header h3 {
@@ -2483,70 +2489,38 @@ font-weight: 500 !important;
     }
 
     #modal-summary-chips {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: nowrap;
-    }
-    
-    /* · · Summary Chips · · */
-    .summary-chip {    
-        position: relative;
-        background: rgba(0, 0, 0, 0.02);
-        backdrop-filter: blur(1px) saturate(180%);
-        border: 1px solid rgba(250, 250, 250, 0.1);
-        border-radius: 13px;
-        padding: 1.25rem;
-        box-shadow: 0 8px 32px rgba(31, 38, 105, 0.1), inset 0 6px 20px rgba(255, 255, 255, 0.013);
-    }
-    /* AFTER */
-    .summary-chip::after {    
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.01);
-        border-radius: 13px;
-        backdrop-filter: blur(1px);
-        box-shadow: inset 10px 12px 0px -8px rgba(255, 255, 255, .05),
-        inset 0px 8px 0px -6px rgba(255, 255, 255, .051);
-        opacity: 0.4;
-        z-index: -1;
-        filter: blur(1px) drop-shadow(10px 4px 6px black) brightness(100%);
-        pointer-events: none;
-    }
-
-     .summary-chip {
-      padding: 0.27rem 0.6rem;
-      text-align: center;
-      min-width: auto;
-    }
-        
-    .summary-chip h4 {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.1rem;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--color-panel-border);
-      padding-bottom: 0.1rem;
-    }
-    
-    .chip-values {
         display: flex;
         justify-content: center;
-        align-items: center;
         gap: 0.25rem;
-        font-size: 0.85rem;
-        color: var(--color-text-primary);
-        font-weight: 400;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    #modal-summary-chips::-webkit-scrollbar {
+        display: none;
     }
     
-    .chip-separator {
-        color: var(--color-text-tertiary);
+    .summary-chip {
+        background: rgba(13, 14, 35, 0.21);
+        border: 1px solid rgba(128, 138, 189, 0.2);
+        border-radius: 6px;
+        padding: 0.2rem 0.5rem;
         font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        white-space: nowrap;
+    }
+
+    .chip-label {
+        font-size: 0.7rem;
+        color: var(--color-text-secondary);
         font-weight: 400;
+        margin-left: 0.1rem;
     }
 
     .chip-pos-rank-label {
