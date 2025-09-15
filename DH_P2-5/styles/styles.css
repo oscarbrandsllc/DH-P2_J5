@@ -3374,8 +3374,6 @@ img.team-logo.glow[alt="WAS"] {
     inset: 0;
     background-color: rgba(0, 0, 0, 0.2);
     z-index: 9; /* Below header (10) but above main content */
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
 }
 
 /* · · ✦ Modal BG, Blur, and Styling · · */
