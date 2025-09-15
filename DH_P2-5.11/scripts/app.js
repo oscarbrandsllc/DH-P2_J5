@@ -872,8 +872,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             modalPlayerName.textContent = `${playerName}`;
             document.getElementById('modal-summary-chips').innerHTML = ''; // Clear previous chips
-            const existingTag = document.querySelector('.modal-pos-tag');
-            if(existingTag) existingTag.remove();
+            const existingPosGroup = document.querySelector('.modal-pos-group');
+            if (existingPosGroup) existingPosGroup.remove();
             modalBody.innerHTML = '<p class="text-center p-4">Loading game logs...</p>';
 
             if (state.isGameLogModalOpenFromComparison) {
@@ -895,88 +895,155 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.name;
 
             const modalHeader = document.getElementById('modal-header');
+            const existingPosGroup = modalHeader.querySelector('.modal-pos-group');
+            if (existingPosGroup) existingPosGroup.remove();
+
+            const posGroup = document.createElement('div');
+            posGroup.className = 'modal-pos-group';
+
             const posTag = document.createElement('div');
             posTag.className = `player-tag modal-pos-tag ${player.pos}`;
             posTag.textContent = player.pos;
-            modalHeader.insertBefore(posTag, modalHeader.firstChild);
+            posGroup.appendChild(posTag);
 
-            // Render summary chips
+            const teamKey = (player.team || 'FA').toUpperCase();
+            if (teamKey && teamKey !== 'FA') {
+                const logoKeyMap = { WSH: 'was', WAS: 'was', JAC: 'jax', LA: 'lar' };
+                const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
+                const teamLogo = document.createElement('img');
+                teamLogo.className = 'team-logo glow modal-team-logo';
+                teamLogo.src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
+                teamLogo.alt = teamKey;
+                teamLogo.width = 22;
+                teamLogo.height = 22;
+                teamLogo.loading = 'lazy';
+                posGroup.appendChild(teamLogo);
+            } else {
+                const faTag = document.createElement('div');
+                faTag.className = 'modal-team-tag';
+                faTag.textContent = 'FA';
+                posGroup.appendChild(faTag);
+            }
+
+            modalHeader.insertBefore(posGroup, modalHeader.firstChild);
+
             const summaryChipsContainer = document.getElementById('modal-summary-chips');
-            summaryChipsContainer.innerHTML = `
-                <div class="summary-chip">
-                    <h4>FPTS / PPG</h4>
-                    <div class="chip-values">
-                        <span style="color: ${getRankColor(playerRanks.overallRank)}">${playerRanks.total_pts}</span>
-                        <span class="chip-separator">/</span>
-                        <span style="color: ${getRankColor(playerRanks.ppgOverallRank)}">${playerRanks.ppg}</span>
-                    </div>
-                </div>
-                <div class="summary-chip">
-                    <h4>FPTS RKs</h4>
-                    <div class="chip-values"></div>
-                </div>
-                <div class="summary-chip">
-                    <h4>PPG RKs</h4>
-                    <div class="chip-values"></div>
-                </div>
-            `;
+            summaryChipsContainer.innerHTML = '';
 
-            const fptsValues = summaryChipsContainer.children[1].querySelector('.chip-values');
-            const ppgValues = summaryChipsContainer.children[2].querySelector('.chip-values');
+            const toNumber = (value) => {
+                if (typeof value === 'number' && Number.isFinite(value)) return value;
+                const parsed = parseInt(value, 10);
+                return Number.isFinite(parsed) ? parsed : null;
+            };
 
-            // Populate FPTS RKs chip
-            if (playerRanks.overallRank === 'NA') {
-                fptsValues.innerHTML = '<span>NA</span>';
-            } else {
-                const overallRankSpan = document.createElement('span');
-                overallRankSpan.style.color = getRankColor(playerRanks.overallRank);
-                overallRankSpan.textContent = `#${playerRanks.overallRank}`;
+            const createChip = (titleText, tooltip) => {
+                const chip = document.createElement('div');
+                chip.className = 'summary-chip';
+                if (!titleText) {
+                    chip.classList.add('no-title');
+                } else {
+                    const titleEl = document.createElement('h4');
+                    titleEl.textContent = titleText;
+                    chip.appendChild(titleEl);
+                }
+                if (tooltip) chip.title = tooltip;
+                const valuesEl = document.createElement('div');
+                valuesEl.className = 'chip-values';
+                chip.appendChild(valuesEl);
+                return { chip, valuesEl };
+            };
 
-                const separatorSpan = document.createElement('span');
-                separatorSpan.className = 'chip-separator';
-                separatorSpan.textContent = ' / ';
+            const appendRankChip = (rankValue, options = {}) => {
+                const { title, tooltip, prefix = '#', color } = options;
+                const { chip, valuesEl } = createChip(title, tooltip);
+                if (rankValue === 'NA' || rankValue === 'N/A') {
+                    const span = document.createElement('span');
+                    span.textContent = 'NA';
+                    valuesEl.appendChild(span);
+                } else {
+                    const span = document.createElement('span');
+                    span.textContent = `${prefix}${rankValue}`;
+                    if (color) span.style.color = color;
+                    valuesEl.appendChild(span);
+                }
+                summaryChipsContainer.appendChild(chip);
+            };
 
-                const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
+            const appendValueChip = (value, options = {}) => {
+                const { title, tooltip, suffix = '', color } = options;
+                const { chip, valuesEl } = createChip(title, tooltip);
+                const span = document.createElement('span');
+                const hasValue = value !== undefined && value !== null && value !== 'N/A' && value !== 'NA';
+                span.textContent = hasValue ? `${value}${suffix}` : '—';
+                if (color) span.style.color = color;
+                valuesEl.appendChild(span);
+                summaryChipsContainer.appendChild(chip);
+            };
 
-                const posTextSpan = document.createElement('span');
-                posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
-                posTextSpan.textContent = `${player.pos}·`;
+            const appendPosRankChip = (rankValue, options = {}) => {
+                const { title, tooltip, posLabel, color } = options;
+                const { chip, valuesEl } = createChip(title, tooltip);
+                if (rankValue === 'NA' || rankValue === 'N/A') {
+                    const span = document.createElement('span');
+                    span.textContent = 'NA';
+                    valuesEl.appendChild(span);
+                } else {
+                    const container = document.createElement('span');
+                    container.className = 'pos-rank-container';
 
-                const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getGameLogPosRankColor(player.pos, playerRanks.posRank);
-                posRankSpan.textContent = playerRanks.posRank;
+                    const posSpan = document.createElement('span');
+                    posSpan.className = 'chip-pos-rank-label';
+                    if (posLabel) posSpan.classList.add(`pos-color-${posLabel}`);
+                    posSpan.textContent = posLabel || '?';
 
-                posRankContainer.append(posTextSpan, posRankSpan);
-                fptsValues.append(overallRankSpan, separatorSpan, posRankContainer);
-            }
+                    const rankSpan = document.createElement('span');
+                    rankSpan.textContent = `#${rankValue}`;
+                    if (color) rankSpan.style.color = color;
 
-            // Populate PPG RKs chip
-            if (playerRanks.ppgOverallRank === 'NA') {
-                ppgValues.innerHTML = '<span>NA</span>';
-            } else {
-                const overallRankSpan = document.createElement('span');
-                overallRankSpan.style.color = getRankColor(playerRanks.ppgOverallRank);
-                overallRankSpan.textContent = `#${playerRanks.ppgOverallRank}`;
+                    container.append(posSpan, rankSpan);
+                    valuesEl.appendChild(container);
+                }
+                summaryChipsContainer.appendChild(chip);
+            };
 
-                const separatorSpan = document.createElement('span');
-                separatorSpan.className = 'chip-separator';
-                separatorSpan.textContent = ' / ';
+            const overallRankNumber = toNumber(playerRanks.overallRank);
+            const posRankNumber = toNumber(playerRanks.posRank);
+            const ppgOverallRankNumber = toNumber(playerRanks.ppgOverallRank);
+            const ppgPosRankNumber = toNumber(playerRanks.ppgPosRank);
 
-                const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
+            appendRankChip(playerRanks.overallRank, {
+                tooltip: 'Overall Fantasy Points Rank',
+                color: overallRankNumber !== null ? getRankColor(overallRankNumber) : null
+            });
 
-                const posTextSpan = document.createElement('span');
-                posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
-                posTextSpan.textContent = `${player.pos}·`;
+            appendValueChip(playerRanks.total_pts, {
+                tooltip: 'Season Fantasy Points Total',
+                suffix: ' FPTS',
+                color: overallRankNumber !== null ? getRankColor(overallRankNumber) : null
+            });
 
-                const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getGameLogPosRankColor(player.pos, playerRanks.ppgPosRank);
-                posRankSpan.textContent = `${playerRanks.ppgPosRank}`;
+            appendPosRankChip(playerRanks.posRank, {
+                tooltip: `${player.pos} Fantasy Points Rank`,
+                posLabel: player.pos,
+                color: posRankNumber !== null ? getGameLogPosRankColor(player.pos, posRankNumber) : null
+            });
 
-                posRankContainer.append(posTextSpan, posRankSpan);
-                ppgValues.append(overallRankSpan, separatorSpan, posRankContainer);
-            }
+            appendRankChip(playerRanks.ppgOverallRank, {
+                tooltip: 'Overall Points Per Game Rank',
+                color: ppgOverallRankNumber !== null ? getRankColor(ppgOverallRankNumber) : null
+            });
+
+            appendValueChip(playerRanks.ppg, {
+                tooltip: 'Fantasy Points Per Game',
+                suffix: ' PPG',
+                color: ppgOverallRankNumber !== null ? getRankColor(ppgOverallRankNumber) : null
+            });
+
+            appendPosRankChip(playerRanks.ppgPosRank, {
+                tooltip: `${player.pos} Points Per Game Rank`,
+                posLabel: player.pos,
+                color: ppgPosRankNumber !== null ? getGameLogPosRankColor(player.pos, ppgPosRankNumber) : null
+            });
 
             modalBody.innerHTML = ''; // Clear existing content
 
