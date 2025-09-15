@@ -3468,4 +3468,12 @@ img.team-logo.glow[alt="WAS"] {
   opacity: 1;
   pointer-events: auto;   /* clickable */
 }
+#comparison-modal-background-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    z-index: 5; /* Below header (10) but above main content */
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
 

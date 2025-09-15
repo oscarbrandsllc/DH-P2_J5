@@ -35,6 +35,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         const modalPlayerName = document.getElementById('modal-player-name');
         const modalBody = document.getElementById('modal-body');
         const playerComparisonModal = document.getElementById('player-comparison-modal');
+        const comparisonBackgroundOverlay = document.getElementById('comparison-modal-background-overlay');
 
         // --- Menu Button ---
         const menuButton = document.getElementById('menu-button');
@@ -241,6 +242,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
         // --- View Toggling and Main Handlers ---
         function setRosterView(view) {
+    closeComparisonModal();
     hideLegend();
             state.currentRosterView = view;
             const isPositional = view === 'positional';
@@ -393,6 +395,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     state.isCompareMode = false;
                     rosterView.classList.remove('is-trade-mode');
                     rosterGrid.classList.remove('is-preview-mode');
+
+                    state.tradeBlock = {};
+                    closeComparisonModal();
+
                     renderAllTeamData(state.currentTeams);
                     renderTradeBlock();
                     updateHeaderPreviewState();
@@ -529,6 +535,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
         // --- Position Filter Logic ---
         function handleClearFilters() {
+            closeComparisonModal();
             state.activePositions.clear();
             updatePositionFilterButtons();
             renderAllTeamData(state.currentTeams);
@@ -536,6 +543,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         }
 
         function handlePositionFilter(e) {
+            closeComparisonModal();
             if (e.target.tagName !== 'BUTTON') return;
             const btn = e.target;
             const position = btn.dataset.position;
@@ -2146,6 +2154,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
 
                 playerComparisonModal.classList.remove('hidden');
+                if (comparisonBackgroundOverlay) {
+                    comparisonBackgroundOverlay.classList.remove('hidden');
+                }
             }
         }
 
@@ -2158,6 +2169,13 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     modalContent.style.bottom = '';
                 }
                 playerComparisonModal.classList.add('hidden');
+                if (comparisonBackgroundOverlay) {
+                    comparisonBackgroundOverlay.classList.add('hidden');
+                }
+                const comparisonModalBody = document.getElementById('comparison-modal-body');
+                if (comparisonModalBody) {
+                    comparisonModalBody.innerHTML = '';
+                }
             }
         }
 
