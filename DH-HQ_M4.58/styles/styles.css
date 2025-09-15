@@ -3443,6 +3443,19 @@ img.team-logo.glow[alt="WAS"] {
 }
 
 
+/* === Overlay for Player Comparison Modal === */
+#comparison-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 5; /* below header (10) and trade preview (20) */
+}
+#comparison-overlay.hidden {
+  display: none;
+}
+
 /* === Player Comparison Modal Layout (fits between header and trade preview) === */
 #player-comparison-modal {
   position: fixed;
@@ -3451,9 +3464,6 @@ img.team-logo.glow[alt="WAS"] {
   display: block;         /* don't center via flex */
   pointer-events: none;   /* allow clicks only on content panel */
   background: transparent;/* no backdrop for this modal */
-}
-#player-comparison-modal .modal-overlay {
-  display: none;          /* hide dim overlay for this modal */
 }
 #player-comparison-modal .modal-content {
   position: fixed;        /* we’ll set top/height via JS in openComparisonModal() */
