@@ -28,13 +28,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         const pageType = document.body.dataset.page || 'welcome';
 
         const gameLogsModal = document.getElementById('game-logs-modal');
-        const modalCloseBtn = document.querySelector('.modal-close-btn');
-        const modalInfoBtn = document.querySelector('.modal-info-btn');
+        const modalCloseBtn = gameLogsModal ? gameLogsModal.querySelector('.modal-close-btn') : null;
+        const modalInfoBtn = gameLogsModal ? gameLogsModal.querySelector('.modal-info-btn') : null;
         const statsKeyContainer = document.getElementById('stats-key-container');
-        const modalOverlay = document.querySelector('.modal-overlay');
+        const modalOverlay = gameLogsModal ? gameLogsModal.querySelector('.modal-overlay') : null;
         const modalPlayerName = document.getElementById('modal-player-name');
         const modalBody = document.getElementById('modal-body');
         const playerComparisonModal = document.getElementById('player-comparison-modal');
+        const playerComparisonOverlay = document.getElementById('player-comparison-overlay');
 
         // --- Menu Button ---
         const menuButton = document.getElementById('menu-button');
@@ -208,15 +209,25 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             if (playerComparisonModal) {
                 const closeBtn = playerComparisonModal.querySelector('.modal-close-btn');
-                const overlay = playerComparisonModal.querySelector('.modal-overlay');
                 if (closeBtn) closeBtn.addEventListener('click', () => closeComparisonModal());
-                if (overlay) overlay.addEventListener('click', () => closeComparisonModal());
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && !playerComparisonModal.classList.contains('hidden')) {
                         closeComparisonModal();
                     }
                 });
             }
+
+            if (playerComparisonOverlay) {
+                playerComparisonOverlay.addEventListener('click', () => clearTrade());
+            }
+
+            document.addEventListener('click', (e) => {
+                if (playerComparisonModal?.classList.contains('hidden')) return;
+                if (playerComparisonModal.contains(e.target)) return;
+                if (tradeSimulator.contains(e.target)) return;
+                if (gameLogsModal?.contains(e.target)) return;
+                clearTrade();
+            });
         }
         
         // --- Initialization ---
@@ -389,12 +400,11 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     // If a team is deselected, hide the trade preview
                     state.teamsToCompare.delete(teamName);
                     checkbox.classList.remove('selected');
-
+                    clearTrade();
                     state.isCompareMode = false;
                     rosterView.classList.remove('is-trade-mode');
                     rosterGrid.classList.remove('is-preview-mode');
                     renderAllTeamData(state.currentTeams);
-                    renderTradeBlock();
                     updateHeaderPreviewState();
 
                 } else {
@@ -2146,6 +2156,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
 
                 playerComparisonModal.classList.remove('hidden');
+                playerComparisonOverlay?.classList.remove('hidden');
             }
         }
 
@@ -2159,6 +2170,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
                 playerComparisonModal.classList.add('hidden');
             }
+            playerComparisonOverlay?.classList.add('hidden');
         }
 
         function setLoading(isLoading, message = 'Loading...') {
