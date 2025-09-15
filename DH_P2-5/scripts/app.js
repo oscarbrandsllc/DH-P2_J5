@@ -178,6 +178,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             tradeSimulator.addEventListener('click', (e) => {
                 if (e.target.closest('#comparePlayersButton')) {
+                    if (playerComparisonModal && !playerComparisonModal.classList.contains('hidden')) {
+                        closeComparisonModal();
+                        return;
+                    }
                     const selectedPlayers = Object.values(state.tradeBlock).flat().filter(asset => asset.pos !== 'DP');
                     if (selectedPlayers.length !== 2) {
                         showTemporaryTooltip(e.target.closest('#comparePlayersButton'), 'Please select exactly 2 players to compare.');
@@ -1717,8 +1721,11 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
   const isEligible = state.isCompareMode && state.teamsToCompare.size >= 2;
 
   if (!isEligible) {
+    state.tradeBlock = {};
+    document.querySelectorAll('.player-selected').forEach(el => el.classList.remove('player-selected'));
     tradeSimulator.style.display = 'none';
     mainContent.style.paddingBottom = '1rem';
+    closeComparisonModal();
     return;
   }
 
@@ -1838,6 +1845,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             document.getElementById('clearTradeButton').addEventListener('click', clearTrade);
             document.getElementById('collapseTradeButton').addEventListener('click', () => {
+                closeComparisonModal();
                 tradeSimulator.classList.add('collapsed');
                 state.isTradeCollapsed = true;
                 mainContent.style.paddingBottom = `${tradeSimulator.offsetHeight + 20}px`;
@@ -2174,6 +2182,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 if (comparisonBackgroundOverlay) {
                     comparisonBackgroundOverlay.classList.remove('hidden');
                 }
+                if (rosterGrid) {
+                    rosterGrid.classList.add('hidden');
+                }
             }
         }
 
@@ -2193,6 +2204,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 if (comparisonModalBody) {
                     comparisonModalBody.innerHTML = '';
                 }
+            }
+            if (rosterGrid) {
+                rosterGrid.classList.remove('hidden');
             }
         }
 

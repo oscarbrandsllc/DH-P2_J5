@@ -694,6 +694,7 @@
             justify-content: flex-start;
             align-items: center;
             gap: 0.4rem;
+            pointer-events: none;
         }
     .player-name { 
             font-weight: 400; 
@@ -703,6 +704,7 @@
             white-space: nowrap !important;
             text-decoration: underline;
             text-decoration-color: #9096D090;
+            pointer-events: auto;
         }
         .player-tag {
             display: inline-flex;
@@ -713,6 +715,7 @@
             padding: 1px 3px;
             border-radius: 4px;
             color: var(--color-bg);
+            pointer-events: auto;
             line-height: 1;
         }
 
@@ -3343,7 +3346,7 @@ img.team-logo.glow[alt="WAS"] {
 #player-comparison-modal {
   position: fixed;
   inset: 0;
-  z-index: 15;            /* below #tradeSimulator (20), above header (10) */
+  z-index: 40;            /* above trade preview (20) and header (10) */
   display: block;         /* don't center via flex */
   pointer-events: none;   /* allow clicks only on content panel */
   background: transparent;/* no backdrop for this modal */
@@ -3371,9 +3374,9 @@ img.team-logo.glow[alt="WAS"] {
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.2);
-    z-index: 9; /* Below header (10) but above main content */
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
+    z-index: 30; /* Below comparison modal (40) but above content */
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
 }
 
 /* · · ✦ Modal BG, Blur, and Styling · · */
