@@ -126,7 +126,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         // --- Constants ---
         const API_BASE = 'https://api.sleeper.app/v1';
         const GOOGLE_SHEET_ID = '1MDTf1IouUIrm4qabQT9E5T0FsJhQtmaX55P32XK5c_0';
+        const GOOGLE_SHEET_ID_STATS = '1i-cKqSfYw0iFiV9S-wBw8lwZePwXZ7kcaWMdnaMTHDs';
         const TAG_COLORS = { QB:"var(--pos-qb)", RB:"var(--pos-rb)", WR:"var(--pos-wr)", TE:"var(--pos-te)", BN:"var(--pos-bn)", TX:"var(--pos-tx)", FLX: "var(--pos-flx)", SFLX: "var(--pos-sflx)" };
+        const sheetHeaderToSleeperKey = {};
         const STARTER_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPER_FLEX'];
         const TEAM_COLORS = { ARI:"#97233F", ATL:"#A71930", BAL:"#241773", BUF:"#00338D", CAR:"#0085CA", CHI:"#1a2d4e", CIN:"#FB4F14", CLE:"#311D00", DAL:"#003594", DEN:"#FB4F14", DET:"#0076B6", GB:"#203731", HOU:"#03202F", IND:"#002C5F", JAX:"#006778", KC:"#E31837", LAC:"#0080C6", LAR:"#003594", LV:"#A5ACAF", MIA:"#008E97", MIN:"#4F2683", NE:"#002244", NO:"#D3BC8D", NYG:"#0B2265", NYJ:"#125740", PHI:"#004C54", PIT:"#FFB612", SEA:"#69BE28", SF:"#B3995D", TB:"#D50A0A", TEN:"#4B92DB", WAS:"#5A1414", FA: "#64748b" };
         const LEAGUE_COLOR_PALETTE = ['#e8d28a', '#bfeee5', '#d9d0ff', '#cfe9ff', '#ffd6e7', '#d9ffcf', '#ffc7a8', '#a8d8ff', '#f2c8ff', '#c8ffde'];
@@ -607,31 +609,16 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         }
         
         async function fetchGameLogs(playerId) {
-            const season = state.leagues.find(l => l.league_id === state.currentLeagueId)?.season;
-            if (!season) {
-                console.error("Could not determine season for game log fetch.");
-                return [];
-            }
-
-            state.weeklyStats = {}; // Clear previous weekly stats
             const allWeeklyStats = [];
-
-            for (let week = 1; week <= 18; week++) {
-                try {
-                    const weeklyStats = await fetchWithCache(`${API_BASE}/stats/nfl/regular/${season}/${week}`);
-                    if (Object.keys(weeklyStats).length === 0) {
-                        break;
-                    }
-                    state.weeklyStats[week] = weeklyStats; // Store for rank calculation
-
-                    if (weeklyStats[playerId]) {
+            for (const sheetName in state.playerStats) {
+                if (sheetName.startsWith('WK')) {
+                    const weekData = state.playerStats[sheetName][playerId];
+                    if (weekData) {
                         allWeeklyStats.push({
-                            week: week,
-                            stats: weeklyStats[playerId]
+                            week: sheetName.replace('WK', ''),
+                            stats: weekData
                         });
                     }
-                } catch (error) {
-                    break;
                 }
             }
             return allWeeklyStats;
@@ -654,13 +641,16 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             }
 
             // Aggregate stats for players who have scored
-            for (const week in state.weeklyStats) {
-                const weeklyData = state.weeklyStats[week];
-                for (const pId in weeklyData) {
-                    if (allPlayers[pId]) { // Make sure the player exists in our list
-                        allPlayers[pId].total_pts += calculateFantasyPoints(weeklyData[pId], scoringSettings);
-                        if(calculateFantasyPoints(weeklyData[pId], scoringSettings) > 0) {
-                            allPlayers[pId].games_played += 1;
+            for (const sheetName in state.playerStats) {
+                if (sheetName.startsWith('WK')) {
+                    const weeklyData = state.playerStats[sheetName];
+                    for (const pId in weeklyData) {
+                        if (allPlayers[pId]) { // Make sure the player exists in our list
+                            const weeklyPoints = calculateFantasyPoints(weeklyData[pId], scoringSettings);
+                            allPlayers[pId].total_pts += weeklyPoints;
+                            if (weeklyPoints > 0) {
+                                allPlayers[pId].games_played += 1;
+                            }
                         }
                     }
                 }
@@ -710,13 +700,25 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
         async function fetchDataFromGoogleSheet() {
             const sheetNames = { oneQb: 'KTC_1QB', sflx: 'KTC_SFLX' };
+            // The sheets are named SZN, WK1, WK2, ... up to WK18. We can fetch them all dynamically.
+            const statSheetNames = ['SZN', ...Array.from({length: 18}, (_, i) => `WK${i + 1}`)];
             try {
-                const [oneQbCsv, sflxCsv] = await Promise.all([
+                const [oneQbCsv, sflxCsv, ...statCsvs] = await Promise.all([
                     fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetNames.oneQb}`).then(res => res.text()),
-                    fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetNames.sflx}`).then(res => res.text())
+                    fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetNames.sflx}`).then(res => res.text()),
+                    ...statSheetNames.map(name => fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID_STATS}/gviz/tq?tqx=out:csv&sheet=${name}`).then(res => res.text()).catch(e => null))
                 ]);
                 state.oneQbData = parseSheetData(oneQbCsv);
                 state.sflxData = parseSheetData(sflxCsv);
+
+                state.playerStats = {};
+                statCsvs.forEach((csv, index) => {
+                    if (csv) {
+                        const sheetName = statSheetNames[index];
+                        state.playerStats[sheetName] = parseStatsSheetData(csv);
+                    }
+                });
+
             } catch (e) { console.error("Fatal Error: Could not fetch data from Google Sheet.", e); }
         }
 
@@ -748,6 +750,28 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 }
             });
             return dataMap;
+        }
+
+        function parseStatsSheetData(csvText) {
+            const data = {};
+            const lines = csvText.split(/\r?\n/);
+            const headers = lines[0].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g).map(h => h.replace(/"/g, '').trim());
+
+            for (let i = 1; i < lines.length; i++) {
+                const columns = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                if (columns.length < 2) continue;
+
+                const playerId = columns[1].replace(/"/g, '').trim();
+                if (!playerId) continue;
+
+                data[playerId] = {};
+                for (let j = 0; j < headers.length; j++) {
+                    const header = headers[j];
+                    const value = columns[j] ? columns[j].replace(/"/g, '').trim() : '';
+                    data[playerId][header] = value;
+                }
+            }
+            return data;
         }
 
         function processRosterData(rosters, users, tradedPicks, leagueInfo) {
@@ -1014,11 +1038,16 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_fd': 'rec1D', 
                 'rec_yar': 'YAC', 
                 'fum': 'FUM',
+                'snp_pct': 'SNP%',
             };
 
-            const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'pass_rtg', 'pass_int', 'pass_sack', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'fum'];
-            const rbStatOrder = ['fpts', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'rush_btkl', 'rush_yac', 'yco_per_car', 'btkl_per_car', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'pass_rtg', 'pass_int', 'pass_sack', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'fum', 'snp_pct'];
+            const rbStatOrder = ['fpts', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'rush_btkl', 'rush_yac', 'yco_per_car', 'btkl_per_car', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum', 'snp_pct'];
+            const wrTeStatOrder = ['fpts', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum', 'snp_pct'];
+
+            for (const key in statLabels) {
+                sheetHeaderToSleeperKey[statLabels[key]] = key;
+            }
 
             let orderedStatKeys;
             if (player.pos === 'QB') orderedStatKeys = qbStatOrder;
@@ -1061,10 +1090,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
                     let value;
                     if (key === 'fpts') value = calculateFantasyPoints(weekStats.stats, scoringSettings);
-                    else if (key === 'ypc') value = (weekStats.stats['rush_att'] || 0) > 0 ? ((weekStats.stats['rush_yd'] || 0) / weekStats.stats['rush_att']) : 0;
-                    else if (key === 'yco_per_car') value = (weekStats.stats['rush_att'] || 0) > 0 ? ((weekStats.stats['rush_yac'] || 0) / weekStats.stats['rush_att']) : 0;
-                    else if (key === 'btkl_per_car') value = (weekStats.stats['rush_att'] || 0) > 0 ? ((weekStats.stats['rush_btkl'] || 0) / weekStats.stats['rush_att']) : 0;
-                    else value = weekStats.stats[key] || 0;
+                    else if (key === 'ypc') value = (parseFloat(weekStats.stats['ruYDS']) || 0) / (parseFloat(weekStats.stats['CAR']) || 1);
+                    else if (key === 'yco_per_car') value = (parseFloat(weekStats.stats['YCO']) || 0) / (parseFloat(weekStats.stats['CAR']) || 1);
+                    else if (key === 'btkl_per_car') value = (parseFloat(weekStats.stats['BTKL']) || 0) / (parseFloat(weekStats.stats['CAR']) || 1);
+                    else value = weekStats.stats[statLabels[key]] || 0;
 
                     if (value > 0) hasData = true;
 
@@ -1101,7 +1130,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     for (const key in weekStats.stats) {
                         const statValue = parseFloat(weekStats.stats[key]);
                         if (!isNaN(statValue)) {
-                            totals[key] = (totals[key] || 0) + statValue;
+                            const sleeperKey = sheetHeaderToSleeperKey[key];
+                            if (sleeperKey) {
+                                totals[sleeperKey] = (totals[sleeperKey] || 0) + statValue;
+                            }
                         }
                     }
                 });
@@ -1131,11 +1163,6 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                         const avgBtklPerCar = totalCarries > 0 ? totalBtkl / totalCarries : 0;
                         displayValue = avgBtklPerCar.toFixed(2);
                     } else if (key === 'pass_rtg') {
-                     // Note: Averaging weekly passer ratings is not statistically perfect.
-                     // A true season passer rating requires calculating from season totals
-                     // of attempts, completions, yards, TDs, and INTs.
-                     // However, INTs are not provided by the weekly stats API endpoint.
-                     // Therefore, we use the available weekly rating and average it.
                          const totalPassRtg = totals['pass_rtg'] || 0;
                          const avgPassRtg = gameLogsWithData.length > 0 ? totalPassRtg / gameLogsWithData.length : 0;
                          displayValue = avgPassRtg.toFixed(2).replace(/\.00$/, '');
@@ -1290,13 +1317,13 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const statLabels = {
                 'fpts': 'FPTS',
                 'pass_att': 'paATT',
-                'pass_cmp': 'COMP',
+                'pass_cmp': 'CMP',
                 'pass_yd': 'paYDS',
                 'pass_td': 'paTD',
                 'pass_fd': 'pa1D',
                 'pass_rtg': 'paRTG',
                 'pass_int': 'INT',
-                'pass_sack': 'SACK',
+                'pass_sack': 'SAC',
                 'rush_att': 'CAR',
                 'rush_yd': 'ruYDS',
                 'ypc': 'YPC',
@@ -1313,14 +1340,15 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_fd': 'rec1D',
                 'rec_yar': 'YAC',
                 'fum': 'FUM',
+                'snp_pct': 'SNP%',
             };
 
             const userPlayer = players[0];
             const otherPlayer = players[1];
 
-            const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'pass_rtg', 'pass_int', 'pass_sack', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'fum'];
-            const rbStatOrder = ['fpts', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'rush_btkl', 'rush_yac', 'yco_per_car', 'btkl_per_car', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'pass_rtg', 'pass_int', 'pass_sack', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'fum', 'snp_pct'];
+            const rbStatOrder = ['fpts', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'rush_btkl', 'rush_yac', 'yco_per_car', 'btkl_per_car', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum', 'snp_pct'];
+            const wrTeStatOrder = ['fpts', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum', 'snp_pct'];
 
             const getStatOrderForPosition = (pos) => {
                 if (pos === 'QB') return qbStatOrder;
@@ -1366,31 +1394,32 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                                 displayValue = calculatedValue.toFixed(2).replace(/\.00$/, '');
                                 break;
                             case 'ypc':
-                                const totalYards = totals['rush_yd'] || 0;
-                                const totalCarries = totals['rush_att'] || 0;
+                                const totalYards = totals['ruYDS'] || 0;
+                                const totalCarries = totals['CAR'] || 0;
                                 calculatedValue = totalCarries > 0 ? totalYards / totalCarries : 0;
                                 displayValue = calculatedValue.toFixed(2);
                                 break;
                             case 'yco_per_car':
-                                const totalYco = totals['rush_yac'] || 0;
-                                const totalCarriesYco = totals['rush_att'] || 0;
+                                const totalYco = totals['YCO'] || 0;
+                                const totalCarriesYco = totals['CAR'] || 0;
                                 calculatedValue = totalCarriesYco > 0 ? totalYco / totalCarriesYco : 0;
                                 displayValue = calculatedValue.toFixed(1);
                                 break;
                             case 'btkl_per_car':
-                                const totalBtkl = totals['rush_btkl'] || 0;
-                                const totalCarriesBtkl = totals['rush_att'] || 0;
+                                const totalBtkl = totals['BTKL'] || 0;
+                                const totalCarriesBtkl = totals['CAR'] || 0;
                                 calculatedValue = totalCarriesBtkl > 0 ? totalBtkl / totalCarriesBtkl : 0;
                                 displayValue = calculatedValue.toFixed(2);
                                 break;
                             case 'pass_rtg':
-                                const totalPassRtg = totals['pass_rtg'] || 0;
-                                const gamesWithPassAttempts = player.gameLogs.filter(w => w.stats['pass_att'] > 0).length;
+                                const totalPassRtg = totals['paRTG'] || 0;
+                                const gamesWithPassAttempts = player.gameLogs.filter(w => (parseFloat(w.stats['paATT']) || 0) > 0).length;
                                 calculatedValue = gamesWithPassAttempts > 0 ? totalPassRtg / gamesWithPassAttempts : 0;
                                 displayValue = calculatedValue.toFixed(2).replace(/\.00$/, '');
                                 break;
                             default:
-                                calculatedValue = totals[statKey] || 0;
+                                const sleeperKey = sheetHeaderToSleeperKey[statLabels[statKey]];
+                                calculatedValue = totals[sleeperKey] || 0;
                                 displayValue = Number.isInteger(calculatedValue) ? String(calculatedValue) : calculatedValue.toFixed(2).replace(/\.00$/, '');
                         }
 
@@ -1454,7 +1483,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     'fpts': 'Fantasy Points', 'pass_att': 'Passing Attempts', 'pass_cmp': 'Completions', 'pass_yd': 'Passing Yards', 'pass_td': 'Passing Touchdowns', 'pass_fd': 'Passing First Downs', 'pass_rtg': 'Passer Rating', 'pass_int': 'Interceptions', 'pass_sack': 'Sacks',
                     'rush_att': 'Carries', 'rush_yd': 'Rushing Yards', 'ypc': 'Yards Per Carry', 'rush_td': 'Rushing Touchdowns', 'rush_fd': 'Rushing First Downs', 'rush_btkl': 'Broken Tackles', 'rush_yac': 'Yards After Contact',
                     'yco_per_car': 'Yards After Contact Per Carry', 'btkl_per_car': 'Broken Tackles Per Carry', 'rec_tgt': 'Targets', 'rec': 'Receptions', 'rec_yd': 'Receiving Yards', 'rec_td': 'Receiving Touchdowns',
-                    'rec_fd': 'Receiving First Downs', 'rec_yar': 'Yards After Catch', 'fum': 'Fumbles Lost',
+                    'rec_fd': 'Receiving First Downs', 'rec_yar': 'Yards After Catch', 'fum': 'Fumbles Lost', 'snp_pct': 'Snap Percentage',
                 };
 
                 let listHtml = '<h4>Player Comparison Stats Key<i class="fa-solid fa-square-xmark" id="close-comparison-key"></i></h4><ul>';
@@ -2017,6 +2046,26 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             }
             return ry > 0 ? ry : null;
         }
+        function calculateFantasyPoints(sheetStats, scoringSettings) {
+            let totalPoints = 0;
+            if (!sheetStats || !scoringSettings) return 0;
+
+            const translatedStats = {};
+            for (const header in sheetStats) {
+                const sleeperKey = sheetHeaderToSleeperKey[header];
+                if (sleeperKey) {
+                    translatedStats[sleeperKey] = parseFloat(sheetStats[header]) || 0;
+                }
+            }
+
+            for (const statKey in translatedStats) {
+                if (scoringSettings[statKey]) {
+                    totalPoints += translatedStats[statKey] * scoringSettings[statKey];
+                }
+            }
+            return totalPoints;
+        }
+
         function getPosRankColor(posRank) {
             if (!posRank || typeof posRank !== 'string') return 'var(--color-text-secondary)';
             const position = posRank.split('·')[0];
