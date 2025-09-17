@@ -792,7 +792,23 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             'rec1D': 'rec_fd',
             'YAC': 'rec_yar',
             'FUM': 'fum',
-            'SNP%': 'snp_pct'
+            'SNP%': 'snp_pct',
+            // ALL
+            'IMP/G': 'imp_per_game',
+            // QB
+            'pIMP': 'p_imp',
+            'pIMP/A': 'p_imp_per_a',
+            'TTT': 'time_to_throw',
+            'PRS%': 'pressure_pct',
+            // RB
+            'ELU': 'elusiveness',
+            'YCO/A': 'yco_per_a',
+            'MTF': 'missed_tackles_forced',
+            'MTF/A': 'mtf_per_a',
+            // WR & TE
+            'YPRR': 'yards_per_route_run',
+            'RR': 'routes_run',
+            'TS%RR': 'target_share_per_route_run'
         };
 
         const SEASON_META_HEADERS = {
@@ -1183,7 +1199,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             }
 
             const statLabels = {
+                'wk': 'WK',
                 'fpts': 'FPTS',
+                'ypr': 'YPR',
                 'pass_att': 'paATT',
                 'pass_cmp': 'CMP',
                 'pass_yd': 'paYDS',
@@ -1197,10 +1215,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'ypc': 'YPC',
                 'rush_td': 'ruTD',
                 'rush_fd': 'ru1D',
-                'rush_btkl': 'BTKL',
+                'rush_btkl': 'MTF',
                 'rush_yac': 'YCO',
-                'yco_per_car': 'YCO  / CAR',
-                'btkl_per_car': 'BTKL  / CAR',
+                'yco_per_car': 'YCO/A',
+                'btkl_per_car': 'MTF/A',
                 'rec_tgt': 'TGT',
                 'rec': 'REC',
                 'rec_yd': 'recYDS',
@@ -1209,11 +1227,23 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_yar': 'YAC',
                 'fum': 'FUM',
                 'snp_pct': 'SNP%',
+                'imp_per_game': 'IMP/G',
+                'p_imp': 'pIMP',
+                'p_imp_per_a': 'pIMP/A',
+                'time_to_throw': 'TTT',
+                'pressure_pct': 'PRS%',
+                'elusiveness': 'ELU',
+                'yco_per_a': 'YCO/A',
+                'missed_tackles_forced': 'MTF',
+                'mtf_per_a': 'MTF/A',
+                'yards_per_route_run': 'YPRR',
+                'routes_run': 'RR',
+                'target_share_per_route_run': 'TS%RR'
             };
 
-            const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'pass_rtg', 'pass_int', 'pass_sack', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'fum', 'snp_pct'];
-            const rbStatOrder = ['fpts', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'rush_btkl', 'rush_yac', 'yco_per_car', 'btkl_per_car', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum', 'snp_pct'];
-            const wrTeStatOrder = ['fpts', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum', 'snp_pct'];
+            const qbStatOrder = ['wk', 'fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_game', 'pass_rtg', 'p_imp', 'p_imp_per_a', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'time_to_throw', 'pressure_pct', 'pass_sack', 'pass_int', 'fum'];
+            const rbStatOrder = ['wk', 'fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_game', 'elusiveness', 'missed_tackles_forced', 'mtf_per_a', 'rush_yac', 'yco_per_a', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
+            const wrTeStatOrder = ['wk', 'fpts', 'snp_pct', 'rec_tgt', 'rec', 'target_share_per_route_run', 'rec_yd', 'yards_per_route_run', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_game', 'routes_run', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             let orderedStatKeys;
             if (player.pos === 'QB') orderedStatKeys = qbStatOrder;
@@ -1257,6 +1287,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     let value;
                     if (key === 'fpts') value = calculateFantasyPoints(weekStats.stats, scoringSettings);
                     else if (key === 'ypc') value = (weekStats.stats['rush_att'] || 0) > 0 ? ((weekStats.stats['rush_yd'] || 0) / weekStats.stats['rush_att']) : 0;
+                    else if (key === 'ypr') value = (weekStats.stats['rec'] || 0) > 0 ? ((weekStats.stats['rec_yd'] || 0) / weekStats.stats['rec']) : 0;
                     else if (key === 'yco_per_car') value = (weekStats.stats['rush_att'] || 0) > 0 ? ((weekStats.stats['rush_yac'] || 0) / weekStats.stats['rush_att']) : 0;
                     else if (key === 'btkl_per_car') value = (weekStats.stats['rush_att'] || 0) > 0 ? ((weekStats.stats['rush_btkl'] || 0) / weekStats.stats['rush_att']) : 0;
                     else if (key === 'snp_pct') value = typeof weekStats.stats[key] === 'number' ? weekStats.stats[key] : 0;
@@ -1499,7 +1530,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             // Table Body
             const statLabels = {
+                'wk': 'WK',
                 'fpts': 'FPTS',
+                'ypr': 'YPR',
                 'pass_att': 'paATT',
                 'pass_cmp': 'COMP',
                 'pass_yd': 'paYDS',
@@ -1513,10 +1546,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'ypc': 'YPC',
                 'rush_td': 'ruTD',
                 'rush_fd': 'ru1D',
-                'rush_btkl': 'BTKL',
+                'rush_btkl': 'MTF',
                 'rush_yac': 'YCO',
-                'yco_per_car': 'YCO / CAR',
-                'btkl_per_car': 'BTKL / CAR',
+                'yco_per_car': 'YCO/A',
+                'btkl_per_car': 'MTF/A',
                 'rec_tgt': 'TGT',
                 'rec': 'REC',
                 'rec_yd': 'recYDS',
@@ -1525,14 +1558,26 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_yar': 'YAC',
                 'fum': 'FUM',
                 'snp_pct': 'SNP%',
+                'imp_per_game': 'IMP/G',
+                'p_imp': 'pIMP',
+                'p_imp_per_a': 'pIMP/A',
+                'time_to_throw': 'TTT',
+                'pressure_pct': 'PRS%',
+                'elusiveness': 'ELU',
+                'yco_per_a': 'YCO/A',
+                'missed_tackles_forced': 'MTF',
+                'mtf_per_a': 'MTF/A',
+                'yards_per_route_run': 'YPRR',
+                'routes_run': 'RR',
+                'target_share_per_route_run': 'TS%RR'
             };
 
             const userPlayer = players[0];
             const otherPlayer = players[1];
 
-            const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'pass_rtg', 'pass_int', 'pass_sack', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'fum', 'snp_pct'];
-            const rbStatOrder = ['fpts', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'rush_btkl', 'rush_yac', 'yco_per_car', 'btkl_per_car', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum', 'snp_pct'];
-            const wrTeStatOrder = ['fpts', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum', 'snp_pct'];
+            const qbStatOrder = ['wk', 'fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_game', 'pass_rtg', 'p_imp', 'p_imp_per_a', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'time_to_throw', 'pressure_pct', 'pass_sack', 'pass_int', 'fum'];
+            const rbStatOrder = ['wk', 'fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_game', 'elusiveness', 'missed_tackles_forced', 'mtf_per_a', 'rush_yac', 'yco_per_a', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
+            const wrTeStatOrder = ['wk', 'fpts', 'snp_pct', 'rec_tgt', 'rec', 'target_share_per_route_run', 'rec_yd', 'yards_per_route_run', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_game', 'routes_run', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             const getStatOrderForPosition = (pos) => {
                 if (pos === 'QB') return qbStatOrder;
@@ -1594,6 +1639,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                                     const totalYards = seasonTotals && typeof seasonTotals.rush_yd === 'number' ? seasonTotals.rush_yd : (aggregatedTotals['rush_yd'] || 0);
                                     const totalCarries = seasonTotals && typeof seasonTotals.rush_att === 'number' ? seasonTotals.rush_att : (aggregatedTotals['rush_att'] || 0);
                                     calculatedValue = totalCarries > 0 ? totalYards / totalCarries : 0;
+                                }
+                                displayValue = calculatedValue.toFixed(2);
+                                break;
+                            case 'ypr':
+                                {
+                                    const totalYards = seasonTotals && typeof seasonTotals.rec_yd === 'number' ? seasonTotals.rec_yd : (aggregatedTotals['rec_yd'] || 0);
+                                    const totalRec = seasonTotals && typeof seasonTotals.rec === 'number' ? seasonTotals.rec : (aggregatedTotals['rec'] || 0);
+                                    calculatedValue = totalRec > 0 ? totalYards / totalRec : 0;
                                 }
                                 displayValue = calculatedValue.toFixed(2);
                                 break;
