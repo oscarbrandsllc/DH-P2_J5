@@ -768,7 +768,6 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         }
 
         const PLAYER_STAT_HEADER_MAP = {
-            'FPT_PPR': 'fpts',
             'paATT': 'pass_att',
             'CMP': 'pass_cmp',
             'paYDS': 'pass_yd',
@@ -1317,13 +1316,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     let displayValue;
 
                     if (key === 'fpts') {
-                        if (seasonTotals && typeof seasonTotals.fpts === 'number') {
-                            const totalPoints = seasonTotals.fpts;
-                            displayValue = Number.isInteger(totalPoints) ? String(totalPoints) : totalPoints.toFixed(2).replace(/\.00$/, '');
-                        } else {
-                            const totalPoints = gameLogsWithData.reduce((sum, week) => sum + calculateFantasyPoints(week.stats, scoringSettings), 0);
-                            displayValue = totalPoints.toFixed(2).replace(/\.00$/, '');
-                        }
+                        const totalPoints = gameLogsWithData.reduce((sum, week) => sum + calculateFantasyPoints(week.stats, scoringSettings), 0);
+                        displayValue = totalPoints.toFixed(2).replace(/\.00$/, '');
                     } else if (key === 'ypc') {
                         const totalYards = seasonTotals && typeof seasonTotals.rush_yd === 'number' ? seasonTotals.rush_yd : (aggregatedTotals['rush_yd'] || 0);
                         const totalCarries = seasonTotals && typeof seasonTotals.rush_att === 'number' ? seasonTotals.rush_att : (aggregatedTotals['rush_att'] || 0);
@@ -1592,13 +1586,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
                         switch (statKey) {
                             case 'fpts':
-                                if (seasonTotals && typeof seasonTotals.fpts === 'number') {
-                                    calculatedValue = seasonTotals.fpts;
-                                    displayValue = Number.isInteger(calculatedValue) ? String(calculatedValue) : calculatedValue.toFixed(2).replace(/\.00$/, '');
-                                } else {
-                                    calculatedValue = player.gameLogs.reduce((sum, week) => sum + calculateFantasyPoints(week.stats, scoringSettings), 0);
-                                    displayValue = calculatedValue.toFixed(2).replace(/\.00$/, '');
-                                }
+                                calculatedValue = player.gameLogs.reduce((sum, week) => sum + calculateFantasyPoints(week.stats, scoringSettings), 0);
+                                displayValue = calculatedValue.toFixed(2).replace(/\.00$/, '');
                                 break;
                             case 'ypc':
                                 {
