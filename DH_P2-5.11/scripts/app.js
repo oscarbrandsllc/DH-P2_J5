@@ -632,44 +632,67 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             if (!league) return null;
             const scoringSettings = league.scoring_settings;
 
+            const seasonStats = state.playerSeasonStats || {};
             const allPlayers = {};
 
-            // Initialize with all players from state.players
+            // Initialize with all players from state.players and seed season metadata when available
             for (const pId in state.players) {
+                const seasonTotals = seasonStats[pId] || null;
+                const seasonGames = typeof seasonTotals?.games_played === 'number' ? seasonTotals.games_played : null;
                 allPlayers[pId] = {
                     total_pts: 0,
-                    games_played: 0,
-                    pos: state.players[pId]?.position || 'N/A'
+                    games_played: seasonGames && seasonGames > 0 ? seasonGames : 0,
+                    hasSeasonGames: seasonGames !== null && seasonGames > 0,
+                    pos: seasonTotals?.pos || state.players[pId]?.position || 'N/A'
                 };
             }
+
+            for (const pId in seasonStats) {
+                if (allPlayers[pId]) continue;
+                const seasonTotals = seasonStats[pId];
+                const seasonGames = typeof seasonTotals?.games_played === 'number' ? seasonTotals.games_played : null;
+                allPlayers[pId] = {
+                    total_pts: 0,
+                    games_played: seasonGames && seasonGames > 0 ? seasonGames : 0,
+                    hasSeasonGames: seasonGames !== null && seasonGames > 0,
+                    pos: seasonTotals?.pos || state.players[pId]?.position || 'N/A'
+                };
+            }
+
+            const hasTrackedStats = (stats) => {
+                if (!stats) return false;
+                return Object.keys(stats).some(key => typeof stats[key] === 'number');
+            };
 
             // Aggregate stats for players who have scored
             for (const week in state.weeklyStats) {
                 const weeklyData = state.weeklyStats[week];
                 for (const pId in weeklyData) {
-                    if (allPlayers[pId]) { // Make sure the player exists in our list
-                        allPlayers[pId].total_pts += calculateFantasyPoints(weeklyData[pId], scoringSettings);
-                        if(calculateFantasyPoints(weeklyData[pId], scoringSettings) > 0) {
-                            allPlayers[pId].games_played += 1;
-                        }
+                    if (!allPlayers[pId]) continue;
+                    const stats = weeklyData[pId];
+                    const weeklyPoints = calculateFantasyPoints(stats, scoringSettings);
+                    allPlayers[pId].total_pts += weeklyPoints;
+                    if (!allPlayers[pId].hasSeasonGames && hasTrackedStats(stats)) {
+                        allPlayers[pId].games_played += 1;
                     }
                 }
             }
 
             // Calculate PPG
             for (const pId in allPlayers) {
-                allPlayers[pId].ppg = allPlayers[pId].games_played > 0 ? allPlayers[pId].total_pts / allPlayers[pId].games_played : 0;
+                const gamesPlayed = allPlayers[pId].games_played;
+                allPlayers[pId].ppg = gamesPlayed > 0 ? allPlayers[pId].total_pts / gamesPlayed : 0;
             }
 
             if (!allPlayers[playerId]) {
                 return {
                     total_pts: 0,
-                    overallRank: 'N/A',
-                    posRank: 'N/A',
+                    overallRank: 'NA',
+                    posRank: 'NA',
                     ppg: 0,
-                    ppgOverallRank: 'N/A',
-                    ppgPosRank: 'N/A',
-                }
+                    ppgOverallRank: 'NA',
+                    ppgPosRank: 'NA',
+                };
             }
 
             const playerList = Object.entries(allPlayers).map(([id, data]) => ({ id, ...data }));
@@ -803,6 +826,15 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             'YPRR': 'yprr',
             'IMP': 'imp',
             'FUM': 'fum',
+            'FPT_PPR': 'fpts_ppr',
+            'FPTS_0.5': 'fpts_half',
+            'FPTS_STD': 'fpts_std',
+            'PRK_PPR': 'prk_ppr',
+            'PRK_0.5P': 'prk_half',
+            'PRK_STD': 'prk_std',
+            'GM_ACTV': 'games_active',
+            'TM_SNP': 'team_snaps',
+            'SNP': 'snaps',
             'SNP%': 'snp_pct'
         };
 
