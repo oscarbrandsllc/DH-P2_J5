@@ -2790,11 +2790,50 @@ font-weight: 500 !important;
     }
     
     /* · · Player Comp Table · · */
-    .player-comparison-table {
+    .player-comparison-table { 
         width: 100%;
         border-collapse: collapse;
         font-size: 0.8rem;
         table-layout: fixed;
+    }
+    .has-rank-annotation {
+        white-space: nowrap;
+    }
+
+    .has-rank-annotation .stat-rank-annotation {
+        display: inline-block;
+        font-size: 0.65em;
+        line-height: 1;
+        margin-left: 0.2em;
+        transform: translateY(-0.45em);
+        letter-spacing: 0.02em;
+    }
+
+    .rank-tier-cell {
+        background-color: var(--rank-tier-color, transparent);
+        color: var(--rank-tier-text-color, var(--color-text-primary));
+        font-weight: 600;
+    }
+
+    .rank-tier-cell .stat-rank-annotation {
+        color: inherit;
+    }
+
+    .rank-tier-chip-value {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.08rem 0.4rem;
+        border-radius: 999px;
+        background-color: var(--rank-tier-color, transparent);
+        color: var(--rank-tier-text-color, inherit);
+        white-space: nowrap;
+        font-weight: 600;
+        line-height: 1.1;
+    }
+
+    .pos-rank-container.rank-tier-chip-value {
+        gap: 0.3rem;
     }
     .player-comparison-table th, .player-comparison-table td {
         padding: 0.25rem;

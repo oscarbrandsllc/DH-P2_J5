@@ -117,7 +117,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         });
 
         // --- State ---
-        let state = { userId: null, leagues: [], players: {}, oneQbData: {}, sflxData: {}, currentLeagueId: null, isSuperflex: false, cache: {}, teamsToCompare: new Set(), isCompareMode: false, currentRosterView: 'positional', activePositions: new Set(), tradeBlock: {}, isTradeCollapsed: false, weeklyStats: {}, playerSeasonStats: {}, playerWeeklyStats: {}, statsSheetsLoaded: false, seasonRankCache: null, isGameLogModalOpenFromComparison: false };
+        let state = { userId: null, leagues: [], players: {}, oneQbData: {}, sflxData: {}, currentLeagueId: null, isSuperflex: false, cache: {}, teamsToCompare: new Set(), isCompareMode: false, currentRosterView: 'positional', activePositions: new Set(), tradeBlock: {}, isTradeCollapsed: false, weeklyStats: {}, playerSeasonStats: {}, playerSeasonRanks: {}, playerWeeklyStats: {}, statsSheetsLoaded: false, seasonRankCache: null, isGameLogModalOpenFromComparison: false };
         const assignedLeagueColors = new Map();
         let nextColorIndex = 0;
         const assignedRyColors = new Map();
@@ -127,7 +127,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
         const API_BASE = 'https://api.sleeper.app/v1';
         const GOOGLE_SHEET_ID = '1MDTf1IouUIrm4qabQT9E5T0FsJhQtmaX55P32XK5c_0';
         const PLAYER_STATS_SHEET_ID = '1i-cKqSfYw0iFiV9S-wBw8lwZePwXZ7kcaWMdnaMTHDs';
-        const PLAYER_STATS_SHEETS = { season: 'SZN', weeks: { 1: 'WK1', 2: 'WK2' } };
+        const PLAYER_STATS_SHEETS = { season: 'SZN', seasonRanks: 'SZN_RKs', weeks: { 1: 'WK1', 2: 'WK2' } };
         const TAG_COLORS = { QB:"var(--pos-qb)", RB:"var(--pos-rb)", WR:"var(--pos-wr)", TE:"var(--pos-te)", BN:"var(--pos-bn)", TX:"var(--pos-tx)", FLX: "var(--pos-flx)", SFLX: "var(--pos-sflx)" };
         const STARTER_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPER_FLEX'];
         const TEAM_COLORS = { ARI:"#97233F", ATL:"#A71930", BAL:"#241773", BUF:"#00338D", CAR:"#0085CA", CHI:"#1a2d4e", CIN:"#FB4F14", CLE:"#311D00", DAL:"#003594", DEN:"#FB4F14", DET:"#0076B6", GB:"#203731", HOU:"#03202F", IND:"#002C5F", JAX:"#006778", KC:"#E31837", LAC:"#0080C6", LAR:"#003594", LV:"#A5ACAF", MIA:"#008E97", MIN:"#4F2683", NE:"#002244", NO:"#D3BC8D", NYG:"#0B2265", NYJ:"#125740", PHI:"#004C54", PIT:"#FFB612", SEA:"#69BE28", SF:"#B3995D", TB:"#D50A0A", TEN:"#4B92DB", WAS:"#5A1414", FA: "#64748b" };
@@ -766,14 +766,16 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             if (state.statsSheetsLoaded) return;
             try {
                 const seasonPromise = fetch(`https://docs.google.com/spreadsheets/d/${PLAYER_STATS_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${PLAYER_STATS_SHEETS.season}`).then(res => res.text());
+                const seasonRanksPromise = fetch(`https://docs.google.com/spreadsheets/d/${PLAYER_STATS_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${PLAYER_STATS_SHEETS.seasonRanks}`).then(res => res.text());
                 const weeklyPromises = Object.entries(PLAYER_STATS_SHEETS.weeks).map(async ([week, sheetName]) => {
                     const csv = await fetch(`https://docs.google.com/spreadsheets/d/${PLAYER_STATS_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`).then(res => res.text());
                     return { week: Number(week), csv };
                 });
 
-                const [seasonCsv, ...weeklyCsvs] = await Promise.all([seasonPromise, ...weeklyPromises]);
+                const [seasonCsv, seasonRanksCsv, ...weeklyCsvs] = await Promise.all([seasonPromise, seasonRanksPromise, ...weeklyPromises]);
 
                 state.playerSeasonStats = parseSeasonStatsCsv(seasonCsv);
+                state.playerSeasonRanks = parseSeasonRanksCsv(seasonRanksCsv);
                 state.seasonRankCache = computeSeasonRankings(state.playerSeasonStats);
                 const weeklyStats = {};
                 weeklyCsvs.forEach(({ week, csv }) => {
@@ -785,6 +787,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             } catch (error) {
                 console.error('Failed to fetch player stats from sheet.', error);
                 state.playerSeasonStats = {};
+                state.playerSeasonRanks = {};
                 state.playerWeeklyStats = {};
                 state.seasonRankCache = null;
                 state.statsSheetsLoaded = false;
@@ -895,6 +898,39 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             return result;
         }
 
+        function parseSeasonRanksCsv(csvText) {
+            const { headers, rows } = parseCsv(csvText);
+            const normalizedHeaders = headers.map(normalizeHeader);
+            const result = {};
+
+            rows.forEach(columns => {
+                let playerId = null;
+                const ranks = {};
+
+                normalizedHeaders.forEach((header, idx) => {
+                    const value = columns[idx];
+                    if (!value) return;
+
+                    if (header === 'SLPR_ID') {
+                        playerId = value.trim();
+                        return;
+                    }
+
+                    const statKey = PLAYER_STAT_HEADER_MAP[header] || SEASON_VALUE_HEADERS[header];
+                    if (!statKey) return;
+
+                    const parsedRank = parseRankValue(value);
+                    if (parsedRank !== null) ranks[statKey] = parsedRank;
+                });
+
+                if (playerId) {
+                    result[playerId] = ranks;
+                }
+            });
+
+            return result;
+        }
+
         function parseSeasonValue(header, value) {
             const trimmed = value.trim();
             if (!trimmed || trimmed.toUpperCase() === 'NA') return null;
@@ -906,6 +942,103 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const numVal = parseFloat(trimmed);
             return Number.isNaN(numVal) ? null : numVal;
+        }
+
+        function parseRankValue(value) {
+            const trimmed = value.trim();
+            if (!trimmed) return null;
+            const upper = trimmed.toUpperCase();
+            if (upper === 'NA' || upper === 'N/A') return null;
+
+            const numVal = parseFloat(trimmed);
+            return Number.isNaN(numVal) ? null : numVal;
+        }
+
+        const STAT_KEY_RANK_OVERRIDES = { fpts: 'fpts_ppr' };
+
+        function getSeasonRankKey(statKey) {
+            return STAT_KEY_RANK_OVERRIDES[statKey] || statKey;
+        }
+
+        function getSeasonRankValue(playerId, statKey) {
+            if (statKey === 'fpts') {
+                let posRank = null;
+                const seasonStats = state.playerSeasonStats?.[playerId];
+                if (seasonStats) {
+                    posRank = seasonStats.pos_rank_ppr;
+                    if (typeof posRank === 'string') {
+                        const trimmed = posRank.trim();
+                        if (trimmed) {
+                            const upper = trimmed.toUpperCase();
+                            if (upper === 'NA' || upper === 'N/A') {
+                                posRank = null;
+                            } else {
+                                const parsed = parseFloat(trimmed);
+                                posRank = Number.isNaN(parsed) ? null : parsed;
+                            }
+                        } else {
+                            posRank = null;
+                        }
+                    }
+                }
+
+                if ((posRank === null || posRank === undefined) && typeof calculatePlayerStatsAndRanks === 'function') {
+                    const ranks = calculatePlayerStatsAndRanks(playerId);
+                    if (ranks && ranks.posRank !== undefined && ranks.posRank !== null) {
+                        if (typeof ranks.posRank === 'number') {
+                            posRank = Number.isNaN(ranks.posRank) ? null : ranks.posRank;
+                        } else {
+                            const rankStr = String(ranks.posRank).trim();
+                            if (rankStr && rankStr.toUpperCase() !== 'NA' && rankStr.toUpperCase() !== 'N/A') {
+                                const parsed = parseFloat(rankStr);
+                                posRank = Number.isNaN(parsed) ? null : parsed;
+                            }
+                        }
+                    }
+                }
+
+                if (typeof posRank === 'number' && !Number.isNaN(posRank)) {
+                    return posRank;
+                }
+
+                return null;
+            }
+
+            const ranks = state.playerSeasonRanks?.[playerId];
+            if (!ranks) return null;
+            const key = getSeasonRankKey(statKey);
+            if (!(key in ranks)) return null;
+            const value = ranks[key];
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                if (!trimmed) return null;
+                const upper = trimmed.toUpperCase();
+                if (upper === 'NA' || upper === 'N/A') return null;
+                const parsed = parseFloat(trimmed);
+                return Number.isNaN(parsed) ? null : parsed;
+            }
+            return null;
+        }
+
+        function getRankDisplayText(rank) {
+            if (rank === null || rank === undefined || Number.isNaN(rank)) {
+                return 'NA';
+            }
+
+            const rankStr = String(rank).trim();
+            if (!rankStr) return 'NA';
+            const upper = rankStr.toUpperCase();
+            if (upper === 'NA' || upper === 'N/A') return 'NA';
+
+            return rankStr;
+        }
+
+        function createRankAnnotation(rank) {
+            const span = document.createElement('span');
+            span.className = 'stat-rank-annotation';
+            span.textContent = `(${getRankDisplayText(rank)})`;
+            return span;
         }
 
         function computeSeasonRankings(seasonStats) {
@@ -1253,9 +1386,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 <div class="summary-chip">
                     <h4>FPTS / PPG</h4>
                     <div class="chip-values">
-                        <span style="color: ${getRankColor(playerRanks.overallRank)}">${playerRanks.total_pts}</span>
+                        <span class="rank-tier-chip-value" style="${getRankHighlightStyle(playerRanks.posRank)}">${playerRanks.total_pts}</span>
                         <span class="chip-separator">/</span>
-                        <span style="color: ${getRankColor(playerRanks.ppgOverallRank)}">${playerRanks.ppg}</span>
+                        <span class="rank-tier-chip-value" style="${getRankHighlightStyle(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
                     </div>
                 </div>
                 <div class="summary-chip">
@@ -1284,14 +1417,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 separatorSpan.textContent = ' / ';
 
                 const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
+                posRankContainer.className = 'pos-rank-container rank-tier-chip-value';
+                applyRankHighlightVars(posRankContainer, playerRanks.posRank);
 
                 const posTextSpan = document.createElement('span');
                 posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
                 posTextSpan.textContent = `${player.pos}·`;
 
                 const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getGameLogPosRankColor(player.pos, playerRanks.posRank);
                 posRankSpan.textContent = playerRanks.posRank;
 
                 posRankContainer.append(posTextSpan, posRankSpan);
@@ -1311,14 +1444,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 separatorSpan.textContent = ' / ';
 
                 const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
+                posRankContainer.className = 'pos-rank-container rank-tier-chip-value';
+                applyRankHighlightVars(posRankContainer, playerRanks.ppgPosRank);
 
                 const posTextSpan = document.createElement('span');
                 posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
                 posTextSpan.textContent = `${player.pos}·`;
 
                 const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getGameLogPosRankColor(player.pos, playerRanks.ppgPosRank);
                 posRankSpan.textContent = `${playerRanks.ppgPosRank}`;
 
                 posRankContainer.append(posTextSpan, posRankSpan);
@@ -1612,7 +1745,12 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                         const totalValue = seasonTotals && typeof seasonTotals[key] === 'number' ? seasonTotals[key] : (aggregatedTotals[key] || 0);
                         displayValue = Number.isInteger(totalValue) ? String(totalValue) : Number(totalValue || 0).toFixed(2).replace(/\.00$/, '');
                     }
+                    const rankValue = getSeasonRankValue(player.id, key);
+                    const rankAnnotation = createRankAnnotation(rankValue);
                     td.textContent = displayValue;
+                    td.appendChild(rankAnnotation);
+                    td.classList.add('has-rank-annotation');
+                    applyRankHighlightToCell(td, rankValue);
                     footerRow.appendChild(td);
                 }
                 tfoot.appendChild(footerRow);
@@ -1701,33 +1839,35 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
           const posRankDisplay = typeof player.posRank === 'number' ? player.posRank : (player.posRank || 'NA');
           const ppgOverallRankDisplay = typeof player.ppgOverallRank === 'number' ? `#${player.ppgOverallRank}` : (player.ppgOverallRank || 'NA');
           const ppgPosRankDisplay = typeof player.ppgPosRank === 'number' ? player.ppgPosRank : (player.ppgPosRank || 'NA');
+          const fptsHighlightStyle = getRankHighlightStyle(player.posRank);
+          const ppgHighlightStyle = getRankHighlightStyle(player.ppgPosRank);
           summaryChipsContainer.innerHTML = `
             <div class="summary-chip">
               <h4>
-                <span class="chip-header-value" style="color: ${getRankColor(player.overallRank)}">${player.total_pts} </span>
+                <span class="chip-header-value rank-tier-chip-value" style="${fptsHighlightStyle}">${player.total_pts}</span>
                 <span class="chip-unit"> FPTS</span>
               </h4>
               <div class="chip-values">
                 <span style="color: ${getRankColor(player.overallRank)}">${overallRankDisplay}</span>
                 <span class="chip-separator">•</span>
-                <span class="pos-rank-container">
+                <span class="pos-rank-container rank-tier-chip-value" style="${fptsHighlightStyle}">
                   <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
-                  <span style="color: ${getGameLogPosRankColor(player.pos, player.posRank)}">${posRankDisplay}</span>
+                  <span>${posRankDisplay}</span>
                 </span>
               </div>
             </div>
 
             <div class="summary-chip">
               <h4>
-                <span class="chip-header-value" style="color: ${getRankColor(player.ppgOverallRank)}">${player.ppg}</span>
+                <span class="chip-header-value rank-tier-chip-value" style="${ppgHighlightStyle}">${player.ppg}</span>
                 <span class="chip-unit"> PPG</span>
               </h4>
               <div class="chip-values">
                 <span style="color: ${getRankColor(player.ppgOverallRank)}">${ppgOverallRankDisplay}</span>
                 <span class="chip-separator">•</span>
-                <span class="pos-rank-container">
+                <span class="pos-rank-container rank-tier-chip-value" style="${ppgHighlightStyle}">
                   <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
-                  <span style="color: ${getGameLogPosRankColor(player.pos, player.ppgPosRank)}">${ppgPosRankDisplay}</span>
+                  <span>${ppgPosRankDisplay}</span>
                 </span>
               </div>
             </div>
@@ -1831,10 +1971,13 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     const row = document.createElement('tr');
                     row.innerHTML = `<td>${statLabels[statKey]}</td>`;
 
-                    let maxVal = -Infinity;
-                    let maxIndices = [];
+                    let bestValue = -Infinity;
+                    let bestValueIndices = [];
                     const values = [];
                     const displayValues = [];
+                    const rankAnnotations = [];
+                    let bestRank = Infinity;
+                    let bestRankIndices = [];
 
                     for (let i = 0; i < players.length; i++) {
                         const player = players[i];
@@ -2008,25 +2151,55 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                             calculatedValue = -1;
                         }
 
+                        const rankValue = getSeasonRankValue(player.id, statKey);
+                        const rankAnnotation = createRankAnnotation(rankValue);
+
                         values.push(calculatedValue);
                         displayValues.push(displayValue);
+                        rankAnnotations.push(rankAnnotation);
 
-                        if (calculatedValue > maxVal) {
-                            maxVal = calculatedValue;
-                            maxIndices = [i];
-                        } else if (calculatedValue === maxVal) {
-                            maxIndices.push(i);
+                        if (typeof rankValue === 'number' && Number.isFinite(rankValue)) {
+                            if (rankValue < bestRank) {
+                                bestRank = rankValue;
+                                bestRankIndices = [i];
+                            } else if (rankValue === bestRank) {
+                                bestRankIndices.push(i);
+                            }
+                        }
+
+                        if (typeof calculatedValue === 'number' && Number.isFinite(calculatedValue)) {
+                            if (calculatedValue > bestValue) {
+                                bestValue = calculatedValue;
+                                bestValueIndices = [i];
+                            } else if (calculatedValue === bestValue) {
+                                bestValueIndices.push(i);
+                            }
                         }
                     }
+
+                    const useRankHighlight = bestRankIndices.length > 0;
 
                     displayValues.forEach((val, i) => {
                         const td = document.createElement('td');
                         td.textContent = val;
+                        const rankAnnotation = rankAnnotations[i];
+                        if (rankAnnotation) {
+                            td.appendChild(rankAnnotation);
+                            td.classList.add('has-rank-annotation');
+                        }
                         if (val !== 'N/A') {
-                            if (maxIndices.length > 1 && maxIndices.includes(i)) {
-                                td.style.color = '#8ab4f8'; // Blue for ties
-                            } else if (maxIndices.length === 1 && maxIndices[0] === i) {
-                                td.classList.add('best-stat'); // Green for the winner
+                            if (useRankHighlight) {
+                                if (bestRankIndices.length > 1 && bestRankIndices.includes(i)) {
+                                    td.style.color = '#8ab4f8';
+                                } else if (bestRankIndices.length === 1 && bestRankIndices[0] === i) {
+                                    td.classList.add('best-stat');
+                                }
+                            } else {
+                                if (bestValueIndices.length > 1 && bestValueIndices.includes(i)) {
+                                    td.style.color = '#8ab4f8';
+                                } else if (bestValueIndices.length === 1 && bestValueIndices[0] === i) {
+                                    td.classList.add('best-stat');
+                                }
                             }
                         }
                         row.appendChild(td);
@@ -2756,6 +2929,50 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             }
 
             return 'var(--color-text-secondary)';
+        }
+
+        function resolveNumericRank(rank) {
+            if (rank === null || rank === undefined) return null;
+            if (typeof rank === 'number') {
+                if (!Number.isFinite(rank)) return null;
+                return rank;
+            }
+            const parsed = parseFloat(String(rank).replace(/[^0-9.\-]/g, ''));
+            if (!Number.isFinite(parsed)) return null;
+            return parsed;
+        }
+
+        function getPositionalRankHighlightColor(rank) {
+            const numericRank = resolveNumericRank(rank);
+            if (numericRank === null) return null;
+
+            if (numericRank <= 8) return '#76FFD4AF';
+            if (numericRank <= 16) return '#48BEFFD7';
+            if (numericRank <= 24) return '#957CFFE2';
+            if (numericRank <= 32) return '#FF6FE1E2';
+            if (numericRank <= 60) return '#FF2EB2CF';
+            return '#767693E2';
+        }
+
+        function getRankHighlightStyle(rank) {
+            const color = getPositionalRankHighlightColor(rank);
+            if (!color) return '';
+            return `--rank-tier-color: ${color}; --rank-tier-text-color: #050914;`;
+        }
+
+        function applyRankHighlightVars(element, rank) {
+            const color = getPositionalRankHighlightColor(rank);
+            if (!color || !element) return;
+            element.style.setProperty('--rank-tier-color', color);
+            element.style.setProperty('--rank-tier-text-color', '#050914');
+        }
+
+        function applyRankHighlightToCell(cell, rank) {
+            if (!cell) return;
+            applyRankHighlightVars(cell, rank);
+            if (cell.style.getPropertyValue('--rank-tier-color')) {
+                cell.classList.add('rank-tier-cell');
+            }
         }
         function getKtcColor(v){const s=[{v:9e3,c:"#00EEB6"},{v:8e3,c:"#14D7CB"},{v:7e3,c:"#0599AA"},{v:6e3,c:"#03a8ce"},{v:5500,c:"#0690DC"},{v:5e3,c:"#066CDC"},{v:4500,c:"#1350fd"},{v:4e3,c:"#5e41ff"},{v:3750,c:"#7158ff"},{v:3500,c:"#964eff"},{v:3250,c:"#9200ff"},{v:3e3,c:"#b70fff"},{v:2750,c:"#ba00cc"},{v:2500,c:"#e800ff"},{v:2250,c:"#db00af"},{v:2e3,c:"#c70097"},{v:0,c:"#FF0080"}];if(v===null||v===0)return"#e0e6ed";for(const t of s)if(v>=t.v)return t.c;return s[s.length-1].c}
         function getAdpColorForRoster(a){const s=[{v:12,c:"#00EEB6"},{v:24,c:"#14D7CB"},{v:36,c:"#0599AA"},{v:48,c:"#03a8ce"},{v:60,c:"#0690DC"},{v:72,c:"#066CDC"},{v:84,c:"#1350fd"},{v:96,c:"#5e41ff"},{v:108,c:"#7158ff"},{v:120,c:"#964eff"},{v:144,c:"#9200ff"},{v:168,c:"#b70fff"},{v:192,c:"#ba00cc"},{v:216,c:"#e800ff"},{v:240,c:"#db00af"},{v:280,c:"#c70097"},{v:320,c:"#FF0080"}];if(!a||a===0)return null;for(const t of s)if(a<=t.v)return t.c;return s[s.length-1].c}
