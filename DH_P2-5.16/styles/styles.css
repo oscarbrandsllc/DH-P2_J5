@@ -2790,11 +2790,23 @@ font-weight: 500 !important;
     }
     
     /* · · Player Comp Table · · */
-    .player-comparison-table {
+    .player-comparison-table { 
         width: 100%;
         border-collapse: collapse;
         font-size: 0.8rem;
         table-layout: fixed;
+    }
+    .has-rank-annotation {
+        white-space: nowrap;
+    }
+
+    .has-rank-annotation .stat-rank-annotation {
+        display: inline-block;
+        font-size: 0.65em;
+        line-height: 1;
+        margin-left: 0.2em;
+        transform: translateY(-0.45em);
+        letter-spacing: 0.02em;
     }
     .player-comparison-table th, .player-comparison-table td {
         padding: 0.25rem;
