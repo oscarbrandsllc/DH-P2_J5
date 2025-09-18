@@ -1386,9 +1386,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 <div class="summary-chip">
                     <h4>FPTS / PPG</h4>
                     <div class="chip-values">
-                        <span style="color: ${getRankColor(playerRanks.overallRank)}">${playerRanks.total_pts}</span>
+                        <span style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.total_pts}</span>
                         <span class="chip-separator">/</span>
-                        <span style="color: ${getRankColor(playerRanks.ppgOverallRank)}">${playerRanks.ppg}</span>
+                        <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
                     </div>
                 </div>
                 <div class="summary-chip">
@@ -1424,7 +1424,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 posTextSpan.textContent = `${player.pos}·`;
 
                 const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getGameLogPosRankColor(player.pos, playerRanks.posRank);
+                posRankSpan.style.color = getConditionalColorByRank(playerRanks.posRank);
                 posRankSpan.textContent = playerRanks.posRank;
 
                 posRankContainer.append(posTextSpan, posRankSpan);
@@ -1451,7 +1451,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 posTextSpan.textContent = `${player.pos}·`;
 
                 const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getGameLogPosRankColor(player.pos, playerRanks.ppgPosRank);
+                posRankSpan.style.color = getConditionalColorByRank(playerRanks.ppgPosRank);
                 posRankSpan.textContent = `${playerRanks.ppgPosRank}`;
 
                 posRankContainer.append(posTextSpan, posRankSpan);
@@ -1750,6 +1750,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     td.textContent = displayValue;
                     td.appendChild(rankAnnotation);
                     td.classList.add('has-rank-annotation');
+                    td.style.color = getConditionalColorByRank(rankValue);
                     footerRow.appendChild(td);
                 }
                 tfoot.appendChild(footerRow);
@@ -1841,7 +1842,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
           summaryChipsContainer.innerHTML = `
             <div class="summary-chip">
               <h4>
-                <span class="chip-header-value" style="color: ${getRankColor(player.overallRank)}">${player.total_pts} </span>
+                <span class="chip-header-value" style="color: ${getConditionalColorByRank(player.posRank)}">${player.total_pts} </span>
                 <span class="chip-unit"> FPTS</span>
               </h4>
               <div class="chip-values">
@@ -1849,14 +1850,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 <span class="chip-separator">•</span>
                 <span class="pos-rank-container">
                   <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
-                  <span style="color: ${getGameLogPosRankColor(player.pos, player.posRank)}">${posRankDisplay}</span>
+                  <span style="color: ${getConditionalColorByRank(player.posRank)}">${posRankDisplay}</span>
                 </span>
               </div>
             </div>
 
             <div class="summary-chip">
               <h4>
-                <span class="chip-header-value" style="color: ${getRankColor(player.ppgOverallRank)}">${player.ppg}</span>
+                <span class="chip-header-value" style="color: ${getConditionalColorByRank(player.ppgPosRank)}">${player.ppg}</span>
                 <span class="chip-unit"> PPG</span>
               </h4>
               <div class="chip-values">
@@ -1864,7 +1865,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 <span class="chip-separator">•</span>
                 <span class="pos-rank-container">
                   <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
-                  <span style="color: ${getGameLogPosRankColor(player.pos, player.ppgPosRank)}">${ppgPosRankDisplay}</span>
+                  <span style="color: ${getConditionalColorByRank(player.ppgPosRank)}">${ppgPosRankDisplay}</span>
                 </span>
               </div>
             </div>
@@ -2885,47 +2886,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             return 'var(--color-text-secondary)';
         }
-        function getGameLogPosRankColor(pos, rank) {
-            if (typeof rank !== 'number') return 'var(--color-text-primary)';
-
-            const wrThresholds = [
-                { v: 6, c: '#76ffd4bb' },
-                { v: 12, c: '#85fff3bb' },
-                { v: 18, c: '#7dd1ffcc' },
-                { v: 24, c: '#48a6ffcc' },
-                { v: 36, c: '#957cffcc' },
-                { v: 48, c: '#a642ffdd' },
-                { v: 60, c: '#cf60ffee' },
-                { v: 72, c: '#ff6fe1ee' },
-                { v: 84, c: '#ff2eb2' },
-            ];
-
-            const otherThresholds = [
-                { v: 4, c: '#76ffd4bb' },
-                { v: 8, c: '#85fff3bb' },
-                { v: 12, c: '#7dd1ffcc' },
-                { v: 18, c: '#48a6ffcc' },
-                { v: 24, c: '#957cffcc' },
-                { v: 30, c: '#a642ffdd' },
-                { v: 36, c: '#ff6fe1ee' },
-                { v: 48, c: '#ff2eb2' },
-            ];
-
-            const thresholds = pos === 'WR' ? wrThresholds : otherThresholds;
-
-            for (const t of thresholds) {
-                if (rank <= t.v) return t.c;
-            }
-
-            if (pos === 'WR') {
-                if (rank > 84 && rank < 96) return '#ff0080';
-                if (rank >= 96) return '#656565';
-            } else {
-                if (rank > 48 && rank < 60) return '#ff0080';
-                if (rank >= 60) return '#656565';
-            }
-
-            return 'var(--color-text-secondary)';
+        function getConditionalColorByRank(rank) {
+            if (typeof rank !== 'number' || rank <= 0)  return 'inherit';
+            if (rank <= 8) return '#76FFD4AF';
+            if (rank <= 16) return '#48BEFFD7';
+            if (rank <= 24) return '#957CFFE2';
+            if (rank <= 32) return '#FF6FE1E2';
+            if (rank <= 60) return '#FF2EB2CF';
+            return '#767693E2';
         }
         function getKtcColor(v){const s=[{v:9e3,c:"#00EEB6"},{v:8e3,c:"#14D7CB"},{v:7e3,c:"#0599AA"},{v:6e3,c:"#03a8ce"},{v:5500,c:"#0690DC"},{v:5e3,c:"#066CDC"},{v:4500,c:"#1350fd"},{v:4e3,c:"#5e41ff"},{v:3750,c:"#7158ff"},{v:3500,c:"#964eff"},{v:3250,c:"#9200ff"},{v:3e3,c:"#b70fff"},{v:2750,c:"#ba00cc"},{v:2500,c:"#e800ff"},{v:2250,c:"#db00af"},{v:2e3,c:"#c70097"},{v:0,c:"#FF0080"}];if(v===null||v===0)return"#e0e6ed";for(const t of s)if(v>=t.v)return t.c;return s[s.length-1].c}
         function getAdpColorForRoster(a){const s=[{v:12,c:"#00EEB6"},{v:24,c:"#14D7CB"},{v:36,c:"#0599AA"},{v:48,c:"#03a8ce"},{v:60,c:"#0690DC"},{v:72,c:"#066CDC"},{v:84,c:"#1350fd"},{v:96,c:"#5e41ff"},{v:108,c:"#7158ff"},{v:120,c:"#964eff"},{v:144,c:"#9200ff"},{v:168,c:"#b70fff"},{v:192,c:"#ba00cc"},{v:216,c:"#e800ff"},{v:240,c:"#db00af"},{v:280,c:"#c70097"},{v:320,c:"#FF0080"}];if(!a||a===0)return null;for(const t of s)if(a<=t.v)return t.c;return s[s.length-1].c}
