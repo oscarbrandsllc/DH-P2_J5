@@ -214,6 +214,16 @@
             gap: 0.25rem;
         }
 
+.rank-superscript {
+  font-size: 0.6em;
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+.game-logs-table-container td, .player-comparison-table td {
+    white-space: nowrap;
+}
+
         .header-row {
             display: flex;
             flex-wrap: nowrap; /* Prevent wrapping */
