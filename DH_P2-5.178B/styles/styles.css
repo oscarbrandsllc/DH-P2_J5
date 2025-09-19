@@ -2312,13 +2312,13 @@ font-weight: 500 !important;
       color: var(--color-text-primary);
     }
 
-    .modal-header-left-container {
-        position: absolute;
-        top: 0.70rem;
-        left: 0.75rem;
+    .modal-player-name-wrapper {
         display: flex;
+        justify-content: center;
         align-items: center;
         gap: 0.5rem;
+        width: 100%;
+        margin-bottom: 1rem;
     }
 /* · · Team Logo Chips · · */
 
@@ -2445,7 +2445,6 @@ font-weight: 500 !important;
       font-size: 1.1rem;
       font-weight: 400;
       color: var(--color-text-primary);
-      margin-bottom: 1rem;
       text-align: center;
     }
     
