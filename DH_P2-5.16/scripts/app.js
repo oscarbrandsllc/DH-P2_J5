@@ -1383,80 +1383,35 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             // Render summary chips
             const summaryChipsContainer = document.getElementById('modal-summary-chips');
             summaryChipsContainer.innerHTML = `
-                <div class="summary-chip">
-                    <h4>FPTS / PPG</h4>
+                <div class="gamelogs-summary-chip">
+                    <h4>
+                        <span class="chip-header-value" style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.total_pts} </span>
+                        <span class="chip-unit"> FPTS</span>
+                    </h4>
                     <div class="chip-values">
-                        <span style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.total_pts}</span>
-                        <span class="chip-separator">/</span>
-                        <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
+                        <span style="color: ${getRankColor(playerRanks.overallRank)}">${typeof playerRanks.overallRank === 'number' ? '#' + playerRanks.overallRank : 'NA'}</span>
+                        <span class="chip-separator">•</span>
+                        <span class="pos-rank-container">
+                            <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                            <span style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.posRank || 'NA'}</span>
+                        </span>
                     </div>
                 </div>
-                <div class="summary-chip">
-                    <h4>FPTS RKs</h4>
-                    <div class="chip-values"></div>
-                </div>
-                <div class="summary-chip">
-                    <h4>PPG RKs</h4>
-                    <div class="chip-values"></div>
+                <div class="gamelogs-summary-chip">
+                    <h4>
+                        <span class="chip-header-value" style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
+                        <span class="chip-unit"> PPG</span>
+                    </h4>
+                    <div class="chip-values">
+                        <span style="color: ${getRankColor(playerRanks.ppgOverallRank)}">${typeof playerRanks.ppgOverallRank === 'number' ? '#' + playerRanks.ppgOverallRank : 'NA'}</span>
+                        <span class="chip-separator">•</span>
+                        <span class="pos-rank-container">
+                            <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                            <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppgPosRank || 'NA'}</span>
+                        </span>
+                    </div>
                 </div>
             `;
-
-            const fptsValues = summaryChipsContainer.children[1].querySelector('.chip-values');
-            const ppgValues = summaryChipsContainer.children[2].querySelector('.chip-values');
-
-            // Populate FPTS RKs chip
-            if (playerRanks.overallRank === 'NA') {
-                fptsValues.innerHTML = '<span>NA</span>';
-            } else {
-                const overallRankSpan = document.createElement('span');
-                overallRankSpan.style.color = getRankColor(playerRanks.overallRank);
-                overallRankSpan.textContent = `#${playerRanks.overallRank}`;
-
-                const separatorSpan = document.createElement('span');
-                separatorSpan.className = 'chip-separator';
-                separatorSpan.textContent = ' / ';
-
-                const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
-
-                const posTextSpan = document.createElement('span');
-                posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
-                posTextSpan.textContent = `${player.pos}·`;
-
-                const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getConditionalColorByRank(playerRanks.posRank);
-                posRankSpan.textContent = playerRanks.posRank;
-
-                posRankContainer.append(posTextSpan, posRankSpan);
-                fptsValues.append(overallRankSpan, separatorSpan, posRankContainer);
-            }
-
-            // Populate PPG RKs chip
-            if (playerRanks.ppgOverallRank === 'NA') {
-                ppgValues.innerHTML = '<span>NA</span>';
-            } else {
-                const overallRankSpan = document.createElement('span');
-                overallRankSpan.style.color = getRankColor(playerRanks.ppgOverallRank);
-                overallRankSpan.textContent = `#${playerRanks.ppgOverallRank}`;
-
-                const separatorSpan = document.createElement('span');
-                separatorSpan.className = 'chip-separator';
-                separatorSpan.textContent = ' / ';
-
-                const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
-
-                const posTextSpan = document.createElement('span');
-                posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
-                posTextSpan.textContent = `${player.pos}·`;
-
-                const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getConditionalColorByRank(playerRanks.ppgPosRank);
-                posRankSpan.textContent = `${playerRanks.ppgPosRank}`;
-
-                posRankContainer.append(posTextSpan, posRankSpan);
-                ppgValues.append(overallRankSpan, separatorSpan, posRankContainer);
-            }
 
             modalBody.innerHTML = ''; // Clear existing content
 
