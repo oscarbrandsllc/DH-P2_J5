@@ -1384,16 +1384,20 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const summaryChipsContainer = document.getElementById('modal-summary-chips');
             summaryChipsContainer.innerHTML = `
                 <div class="summary-chip">
-                    <h4>FPTS / PPG</h4>
+                    <h4>FPTS</h4>
                     <div class="chip-values">
                         <span style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.total_pts}</span>
-                        <span class="chip-separator">/</span>
-                        <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
                     </div>
                 </div>
                 <div class="summary-chip">
                     <h4>FPTS RKs</h4>
                     <div class="chip-values"></div>
+                </div>
+                <div class="summary-chip">
+                    <h4>PPG</h4>
+                    <div class="chip-values">
+                        <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
+                    </div>
                 </div>
                 <div class="summary-chip">
                     <h4>PPG RKs</h4>
@@ -1402,7 +1406,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             `;
 
             const fptsValues = summaryChipsContainer.children[1].querySelector('.chip-values');
-            const ppgValues = summaryChipsContainer.children[2].querySelector('.chip-values');
+            const ppgValues = summaryChipsContainer.children[3].querySelector('.chip-values');
 
             // Populate FPTS RKs chip
             if (playerRanks.overallRank === 'NA') {
