@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sleeper Roster &amp; Ownership Tool</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@200;300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@100;200;300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Google+Sans:100,200,300,400,500,600,700" rel="stylesheet"/>
+<link href="manifest.webmanifest?v=20250827002411?v=20250826235225" rel="manifest"/><link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20250827002411?v=20250826235225" /><meta content="#0D0E1B" name="theme-color"/><link href="styles/styles.css?v=20250827002411?v=20250826235225" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script>  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=20250827002411?v=20250826235225" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png?v=20250827002411?v=20250826235225" />
+  <link rel="shortcut icon" href="assets/icons/favicon.ico?v=20250827002411?v=20250826235225" />
+<link rel="stylesheet"
+
+
+</head>
+<body data-page="welcome" class="p-2 sm:p-4">
+<!-- Replaced Background: Starfield -->
+<div aria-hidden="true" id="starfield">
+<div id="stars"></div>
+<div id="stars1"></div>
+<div id="stars2"></div>
+<div id="stars3"></div>
+</div>
+<div id="noise-overlay"></div>
+<!-- EDITED: Added a class for layout control -->
+<div class="relative z-10 content-wrapper">
+<div id="header-container">
+<header class="app-header glass-panel">
+<div class="header-row">
+<div class="menu-container">
+    <button id="menu-button" class="menu-button">
+        <svg viewBox="0 0 100 80" width="20" height="20">
+            <rect width="100" height="15"></rect>
+            <rect y="30" width="100" height="15"></rect>
+            <rect y="60" width="100" height="15"></rect>
+        </svg>
+    </button>
+    <div id="dropdown-menu" class="dropdown-menu hidden">
+        <a href="index.html">Home</a>
+        <a href="#" id="menu-rosters">Rosters</a>
+        <a href="#" id="menu-ownership">Ownership</a>
+        <a href="#" id="menu-analyzer">League Analyzer</a>
+        <a href="#">Coming Soon..</a>
+    </div>
+</div>
+<div class="username-area">
+<input autocapitalize="none" autocomplete="username" autocorrect="off" id="usernameInput" inputmode="text" name="username" placeholder="SLPR Username..." type="text" value="The_Oracle"/>
+</div>
+<div class="app-view-switcher primary-switcher">
+<button id="fetchRostersButton">Rosters</button>
+<button id="fetchOwnershipButton">Ownership %</button>
+</div>
+</div>
+<!-- contextual controls removed on welcome page -->
+</header>
+</div>
+<main class="container mx-auto" id="content">
+<div id="welcome-screen">
+<picture class="welcome-logo">
+  <img 
+    alt="App logo" 
+    decoding="async" 
+    height="128" 
+    loading="eager" 
+    width="128"
+    src="assets/welcome/welcome-logo-256.png"
+    style="
+      -webkit-mask-image: 
+      radial-gradient(circle at 59% 59%, rgba(0,0,0,1) 42%, rgba(0,0,0,0) 89%);
+      mask-image: 
+      radial-gradient(circle at 59% 59%, rgba(0,0,0,1) 42%, rgba(0,0,0,0) 89%);
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+          "
+  />
+</picture>
+
+<h2>Welcome to League HQ</h2>
+<p>
+  Enter a Sleeper username and click 'Rosters' or 'Ownership %' to get started.
+</p>
+
+<section 
+  aria-label="Install as a web app" 
+  class="panel install-panel" 
+  id="install-webapp"
+>
+  <h3 class="panel-title">Set up as a Web App</h3>
+
+  <details class="install-details">
+    <summary>iPhone, iPad, Android, and Mac</summary>
+
+    <div class="install-columns">
+
+      <div class="install-card">
+        <h4>iPhone (Safari)</h4>
+        <ol>
+          <li>Open this site in Safari.</li>
+          <li>Tap Share.</li>
+          <li>Scroll and tap Add to Home Screen.</li>
+        </ol>
+        <p class="hint">
+          Tip: If you don't see it, tap Edit Actions and enable Add to Home Screen.
+        </p>
+      </div>
+
+      <div class="install-card">
+        <h4>iPad (Safari)</h4>
+        <ol>
+          <li>Open this site in Safari.</li>
+          <li>Tap Share in the toolbar.</li>
+          <li>Tap Add to Home Screen.</li>
+        </ol>
+      </div>
+
+      <div class="install-card">
+        <h4>Android (Chrome)</h4>
+        <ol>
+          <li>Open this site in Chrome.</li>
+          <li>Tap the ⋮ menu.</li>
+          <li>Choose Add to Home screen or Install app.</li>
+        </ol>
+      </div>
+
+      <div class="install-card">
+        <h4>Mac (Safari)</h4>
+        <ol>
+          <li>Open this site in Safari.</li>
+          <li>Choose File → Add to Dock (or Share → Add to Dock).</li>
+        </ol>
+      </div>
+
+    </div>
+  </details>
+</section>
+  <div class="install-footnote" id="installFootnote">• A Dynasty-Hub© App •</div>
+
+<!-- hidden SVG mask for the glow -->
+<svg width="0" height="0" style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
+  <defs>
+    <!-- Upside-down T made from two rounded rects -->
+    <mask id="welcomeGlowT" maskUnits="objectBoundingBox">
+      <!-- Black = transparent (hide), White = visible (show glow) -->
+      <rect x="0" y="0" width="1" height="1" fill="black"/>
+      <!-- Horizontal bar (near bottom) -->
+      <rect x="0.11" y="0.80" width="0.78" height="0.16" rx="0.08" ry="0.08" fill="white"/>
+      <!-- Vertical stem (centered) -->
+      <rect x="0.39" y="0.10" width="0.22" height="0.70" rx="0.08" ry="0.08" fill="white"/>
+    </mask>
+  </defs>
+</svg>
+
+
+<!-- External footnote (below card) -->
+</div><section aria-label="Player Card Legend" class="hidden legend-section panel" id="legend-section"><h3 class="panel-title">Player Card Legend</h3><div aria-label="Roster Player Card Key" class="player-row legend-card" id="rosterPlayerCardKey" role="region">
+<!-- Top row: Position tag + Player  -->
+<div class="player-main-line legend-main">
+<span class="player-tag legend-pos">POSITION</span>
+<span class="player-name legend-name">PLAYER NAME</span>
+</div>
+<!-- Middle row: Position Rank • Age • Team tag (right aligned) -->
+<div class="player-meta-line legend-meta">
+<span class="player-pos-rank legend-pos-rank">POSITION<br/>RANK (KTC)</span>
+<span class="separator">•</span>
+<span><span class="player-age legend-age">AGE</span></span>
+<span class="separator">•</span>
+<span class="team-tag legend-team">TEAM</span>
+</div>
+<!-- Bottom row: KTC left, ADP right (no chips) -->
+<div class="player-value-line legend-bottom"><div class="legend-bottom-bg">
+<span class="kv-left"><span class="value player-ktc legend-ktc">KTC VALUE</span></span>
+<span class="kv-right"><span class="value player-adp legend-adp">ADP</span></span>
+</div></div>
+</div><div class="legend-footnote" id="rosterCardFootnote">KTC VALUE AND ADP ARE SPECIFIC TO LEAGUE SCORING / FORMAT.</div></section>
+<div class="hidden" id="loading">Loading...</div>
+</main>
+<footer id="legalFootnote" class="page-footnote" role="contentinfo" aria-label="Data & affiliation disclaimer">
+  This App uses KTC player values and Sleeper roster data (updated daily). Data is owned by their respective providers. This App is not affiliated with or endorsed by KTC or Sleeper.
+</footer>
+</div>
+<script defer src="scripts/app.js?v=20250826235225"></script></body>
+</html>
