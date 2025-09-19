@@ -2726,6 +2726,11 @@ font-weight: 500 !important;
     color: var(--color-text-primary);
 }
 
+#player-comparison-modal .modal-footer {
+    margin-top: 0.55rem;
+    margin-bottom: 0.05rem;
+}
+
 .modal-info-btn {
     font-size: 0.8rem;
     line-height: 0.8rem; /* Keep icon slightly larger than text */
@@ -2860,7 +2865,7 @@ font-weight: 500 !important;
     .player-comparison-container {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.4rem;
         flex: 1;
         min-height: 0;
     }
@@ -2880,6 +2885,55 @@ font-weight: 500 !important;
         font-weight: 700;
         color: var(--color-text-primary);
         line-height: 1.1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .player-name-header-link {
+        background: none;
+        border: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: none;
+        transition: color 0.2s ease, text-decoration-color 0.2s ease;
+    }
+
+    .player-name-header-link:hover,
+    .player-name-header-link:focus-visible {
+        color: var(--color-accent-primary);
+        text-decoration: underline;
+        outline: none;
+    }
+
+    .player-header-tags {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.1rem;
+    }
+
+    .player-header-tags .modal-pos-tag {
+        font-size: 0.75rem;
+        padding: 3px 6px;
+        line-height: 0.85rem;
+    }
+
+    .player-header-tags .modal-team-logo-chip {
+        padding: 1px 5px;
+    }
+
+    .player-header-tags .modal-team-logo-chip span {
+        font-size: 0.7rem;
+    }
+
+    .player-header-tags .modal-team-logo-chip img.team-logo {
+        width: 18px;
+        height: 18px;
     }
     
     #close-comparison-key {
@@ -2899,9 +2953,9 @@ font-weight: 500 !important;
     .comparison-summary-chips-row {
         display: flex;
         justify-content: center;
-        gap: 1rem;
+        gap: 0.75rem;
         flex-wrap: wrap;
-        padding: 0.5rem 0;
+        padding: 0.35rem 0;
         border-top: 1px solid var(--color-panel-border);
         border-bottom: 1px solid var(--color-panel-border);
     }
@@ -2921,7 +2975,7 @@ font-weight: 500 !important;
     .summary-chips-container {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.2rem;
     }
     
     /* · · Player Comp Table · · */
@@ -2971,7 +3025,7 @@ font-weight: 500 !important;
         
         /* · · Summary Chips · · */
     #player-comparison-modal .summary-chip {
-        padding: 0.3rem 0.9rem; /* Further reduced padding */
+        padding: 0.24rem 0.85rem; /* Further reduced padding */
         text-align: center;
         min-width: auto;
         position: relative;
@@ -2993,10 +3047,10 @@ font-weight: 500 !important;
         font-size: 0.7rem;
         font-weight: 700;
         color: var(--color-text-secondary);
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.05rem;
         text-transform: uppercase;
         border-bottom: 1px solid var(--color-panel-border);
-        padding-bottom: 0.1rem;
+        padding-bottom: 0.08rem;
         gap: 0.5rem;
     }
 #player-comparison-modal .summary-chip .chip-separator {
@@ -3190,7 +3244,8 @@ font-weight: 500 !important;
     }
 
     #player-comparison-modal .comparison-summary-chips-row {
-        gap: 0.5rem;
+        gap: 0.4rem;
+        padding: 0.25rem 0;
     }
 
     #player-comparison-modal .summary-chips-container {
@@ -3713,6 +3768,7 @@ img.team-logo.glow[alt="WAS"] {
   transform: none;        /* no scale animation */
   opacity: 1;
   pointer-events: auto;   /* clickable */
+  padding-bottom: 0.05rem;
 }
 
 /* · · Overlay · · */

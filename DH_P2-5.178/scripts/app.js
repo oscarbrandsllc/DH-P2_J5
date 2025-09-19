@@ -511,7 +511,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const teamName = assetRow.closest('.roster-column')?.dataset.teamName;
             if (!teamName || !state.teamsToCompare.has(teamName)) return;
 
-            const { assetId, assetLabel, assetKtc, assetPos } = assetRow.dataset;
+            const { assetId, assetLabel, assetKtc, assetPos, assetBasePos, assetTeam } = assetRow.dataset;
             if (!assetId) return;
 
             if (!state.tradeBlock[teamName]) {
@@ -528,7 +528,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     id: assetId,
                     label: assetLabel,
                     ktc: parseInt(assetKtc, 10) || 0,
-                    pos: assetPos
+                    pos: assetPos,
+                    basePos: assetBasePos || assetPos,
+                    team: assetTeam || ''
                 });
                 assetRow.classList.add('player-selected');
             }
@@ -1759,7 +1761,21 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     const assets = state.tradeBlock[teamName];
                     assets.forEach(asset => {
                         if (asset.pos !== 'DP') {
-                            selectedPlayersWithTeams.push({ ...asset, teamName });
+                            const fullPlayer = state.players[asset.id];
+                            const playerName = fullPlayer
+                                ? `${fullPlayer.first_name} ${fullPlayer.last_name}`
+                                : asset.label;
+                            const normalizedTeam = (asset.team || fullPlayer?.team || 'FA').toUpperCase();
+                            const primaryPos = (asset.basePos || fullPlayer?.position || asset.pos || '').toUpperCase();
+
+                            selectedPlayersWithTeams.push({
+                                ...asset,
+                                teamName,
+                                name: playerName,
+                                pos: primaryPos || asset.pos,
+                                displayPos: asset.pos,
+                                team: normalizedTeam
+                            });
                         }
                     });
                 }
@@ -1799,20 +1815,56 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             playerNamesRow.className = 'player-names-row';
             players.forEach(player => {
                 const fullPlayer = state.players[player.id];
-                const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
+                const playerName = player.name || (fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label);
 
                 const headerContainer = document.createElement('div');
                 headerContainer.className = 'player-name-header-container';
 
-                headerContainer.innerHTML = `
-                    <div class="player-name-header">${playerName}<br><span class="game-log-link">Game Log</span></div>
-                `;
+                const nameHeader = document.createElement('div');
+                nameHeader.className = 'player-name-header';
 
-                const gameLogLink = headerContainer.querySelector('.game-log-link');
-                gameLogLink.onclick = () => {
+                const nameButton = document.createElement('button');
+                nameButton.type = 'button';
+                nameButton.className = 'player-name-header-link';
+                nameButton.textContent = playerName;
+                nameButton.onclick = () => {
                     state.isGameLogModalOpenFromComparison = true;
-                    handlePlayerNameClick(player);
+                    const resolvedTeam = player.team || fullPlayer?.team || 'FA';
+                    const playerForLogs = {
+                        id: player.id,
+                        name: player.name || playerName,
+                        pos: player.pos,
+                        team: resolvedTeam
+                    };
+                    handlePlayerNameClick(playerForLogs);
                 };
+
+                const tagsRow = document.createElement('div');
+                tagsRow.className = 'player-header-tags';
+
+                const posTag = document.createElement('div');
+                posTag.className = `player-tag modal-pos-tag ${player.pos}`;
+                posTag.textContent = player.pos;
+
+                const teamKey = (player.team || fullPlayer?.team || 'FA').toUpperCase();
+                const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
+                const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
+                const src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
+                const teamLogoChip = document.createElement('div');
+                teamLogoChip.className = 'player-tag modal-team-logo-chip';
+                if (teamKey && teamKey !== 'FA') {
+                    teamLogoChip.dataset.team = teamKey;
+                    teamLogoChip.innerHTML = `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="20" height="20" loading="lazy">`;
+                } else {
+                    teamLogoChip.innerHTML = '<span>FA</span>';
+                }
+
+                tagsRow.appendChild(posTag);
+                tagsRow.appendChild(teamLogoChip);
+
+                nameHeader.appendChild(nameButton);
+                nameHeader.appendChild(tagsRow);
+                headerContainer.appendChild(nameHeader);
 
                 playerNamesRow.appendChild(headerContainer);
             });
@@ -1883,7 +1935,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
                 const th = document.createElement('th');
                 th.className = 'player-header';
-                th.innerHTML = `<h4>${playerName}</h4><span class="player-pos-team">${player.pos} - ${fullPlayer.team || 'FA'}</span>`;
+                th.innerHTML = `<h4>${playerName}</h4>`;
                 tr.appendChild(th);
             });
             thead.appendChild(tr);
@@ -2453,6 +2505,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             row.dataset.assetLabel = player.name;
             row.dataset.assetKtc = player.ktc || 0;
             row.dataset.assetPos = displaySlot;
+            row.dataset.assetBasePos = (player.pos || displaySlot || '').toUpperCase();
+            row.dataset.assetTeam = (player.team || 'FA').toUpperCase();
 
             if (state.tradeBlock[teamName]?.find(a => a.id === player.id)) {
                 row.classList.add('player-selected');
@@ -2981,7 +3035,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     const tradePreviewRect = tradePreview.getBoundingClientRect();
 
                     const topPosition = headerRect.bottom + 10;
-                    const availableHeight = tradePreviewRect.top - topPosition - 10;
+                    const spacingAdjustment = 6;
+                    const availableHeight = tradePreviewRect.top - topPosition - spacingAdjustment;
 
                     modalContent.style.top = `${topPosition}px`;
                     modalContent.style.height = `${availableHeight}px`;
