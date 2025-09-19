@@ -2107,7 +2107,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_g', 'pass_rtg', 'pass_imp', 'pass_imp_per_att', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'ttt', 'prs_pct', 'pass_sack', 'pass_int', 'fum'];
             const rbStatOrder = ['fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_g', 'elu', 'mtf', 'mtf_per_att', 'rush_yac', 'yco_per_att', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'first_down_rec_rate', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             const getStatOrderForPosition = (pos) => {
                 if (pos === 'QB') return qbStatOrder;
