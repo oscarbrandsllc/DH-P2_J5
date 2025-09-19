@@ -1359,6 +1359,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             document.getElementById('modal-summary-chips').innerHTML = ''; // Clear previous chips
             const existingHeaderContainer = document.querySelector('.modal-header-left-container');
             if(existingHeaderContainer) existingHeaderContainer.remove();
+            const existingNameWrapper = document.querySelector('.modal-player-name-wrapper');
+            if(existingNameWrapper) {
+                const modalPlayerName = existingNameWrapper.querySelector('#modal-player-name');
+                if (modalPlayerName) {
+                    existingNameWrapper.parentNode.insertBefore(modalPlayerName, existingNameWrapper);
+                }
+                existingNameWrapper.remove();
+            }
             modalBody.innerHTML = '<p class="text-center p-4">Loading game logs...</p>';
 
             if (state.isGameLogModalOpenFromComparison) {
@@ -1379,14 +1387,17 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const fullPlayer = state.players[player.id];
             const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.name;
 
-            const modalHeader = document.getElementById('modal-header');
-            const headerContainer = document.createElement('div');
-            headerContainer.className = 'modal-header-left-container';
+            const modalPlayerName = document.getElementById('modal-player-name');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'modal-player-name-wrapper';
+            modalPlayerName.parentNode.insertBefore(wrapper, modalPlayerName);
 
             const posTag = document.createElement('div');
             posTag.className = `player-tag modal-pos-tag ${player.pos}`;
             posTag.textContent = player.pos;
-            headerContainer.appendChild(posTag);
+            wrapper.appendChild(posTag);
+
+            wrapper.appendChild(modalPlayerName);
 
             const teamKey = (player.team || 'FA').toUpperCase();
             const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
@@ -1398,8 +1409,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             teamLogoChip.innerHTML = (player.team && player.team !== 'FA')
               ? `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="24" height="24" loading="lazy">`
               : `<span>FA</span>`;
-            headerContainer.appendChild(teamLogoChip);
-            modalHeader.insertBefore(headerContainer, modalHeader.firstChild);
+            wrapper.appendChild(teamLogoChip);
 
             // Render summary chips
             const summaryChipsContainer = document.getElementById('modal-summary-chips');
@@ -2013,7 +2023,10 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             tr.appendChild(statTh);
             players.forEach(player => {
                 const fullPlayer = state.players[player.id];
-                const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
+                let playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
+                if (playerName.length > 14) {
+                    playerName = playerName.substring(0, 14) + '…';
+                }
                 const th = document.createElement('th');
                 th.className = 'player-header';
                 th.innerHTML = `<h4>${playerName}</h4>`;
