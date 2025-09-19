@@ -870,6 +870,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             'RR': 'rr',
             'TS%RR': 'ts_per_rr',
             'YPRR': 'yprr',
+            '1DRR': 'first_down_rec_rate',
             'IMP': 'imp',
             'FUM': 'fum',
             'SNP%': 'snp_pct'
@@ -1528,6 +1529,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_fd': 'rec1D',
                 'rec_yar': 'YAC',
                 'yprr': 'YPRR',
+                'first_down_rec_rate': '1DRR',
                 'ts_per_rr': 'TS%RR',
                 'rr': 'RR',
                 'ypr': 'YPR',
@@ -1537,7 +1539,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_g', 'pass_rtg', 'pass_imp', 'pass_imp_per_att', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'ttt', 'prs_pct', 'pass_sack', 'pass_int', 'fum'];
             const rbStatOrder = ['fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_g', 'elu', 'mtf', 'mtf_per_att', 'rush_yac', 'yco_per_att', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'rec_fd', 'first_down_rec_rate', 'yprr', 'rec_td', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             let orderedStatKeys;
             if (player.pos === 'QB') orderedStatKeys = qbStatOrder;
@@ -1614,6 +1616,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                             value = receptions > 0 ? yards / receptions : 0;
                         }
                     }
+                    else if (key === 'first_down_rec_rate') {
+                        if (typeof weekStats.stats[key] === 'number') value = weekStats.stats[key];
+                        else {
+                            const rec_fd = weekStats.stats['rec_fd'] || 0;
+                            const rec = weekStats.stats['rec'] || 0;
+                            value = rec > 0 ? (rec_fd / rec) : 0;
+                        }
+                    }
                     else if (key === 'imp_per_g') {
                         if (typeof weekStats.stats[key] === 'number') value = weekStats.stats[key];
                         else value = weekStats.stats['imp'] || 0;
@@ -1627,7 +1637,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     let displayValue;
                     if (typeof value !== 'number') displayValue = value || '0';
                     else if (key === 'yco_per_att') displayValue = value.toFixed(2);
-                    else if (key === 'mtf_per_att' || key === 'ypc' || key === 'ttt' || key === 'ypr' || key === 'yprr') displayValue = value.toFixed(2);
+                    else if (key === 'mtf_per_att' || key === 'ypc' || key === 'ttt' || key === 'ypr' || key === 'yprr' || key === 'first_down_rec_rate') displayValue = value.toFixed(2);
                     else if (key === 'pass_imp_per_att' || key === 'prs_pct' || key === 'snp_pct' || key === 'ts_per_rr') displayValue = formatPercentage(value);
                     else displayValue = value.toFixed(2).replace(/\.00$/, '');
 
@@ -1771,6 +1781,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                             value = totalReceptions > 0 ? totalRecYds / totalReceptions : 0;
                         }
                         displayValue = Number(value).toFixed(2).replace(/\.00$/, '');
+                    } else if (key === 'first_down_rec_rate') {
+                        let value = seasonTotals && typeof seasonTotals.first_down_rec_rate === 'number' ? seasonTotals.first_down_rec_rate : null;
+                        if (value === null) {
+                            const totalRecFd = seasonTotals && typeof seasonTotals.rec_fd === 'number' ? seasonTotals.rec_fd : (aggregatedTotals['rec_fd'] || 0);
+                            const totalRec = seasonTotals && typeof seasonTotals.rec === 'number' ? seasonTotals.rec : (aggregatedTotals['rec'] || 0);
+                            value = totalRec > 0 ? (totalRecFd / totalRec) : 0;
+                        }
+                        displayValue = Number(value).toFixed(2);
                     } else {
                         const totalValue = seasonTotals && typeof seasonTotals[key] === 'number' ? seasonTotals[key] : (aggregatedTotals[key] || 0);
                         displayValue = Number.isInteger(totalValue) ? String(totalValue) : Number(totalValue || 0).toFixed(2).replace(/\.00$/, '');
@@ -2092,6 +2110,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_fd': 'rec1D',
                 'rec_yar': 'YAC',
                 'yprr': 'YPRR',
+                'first_down_rec_rate': '1DRR',
                 'ts_per_rr': 'TS%RR',
                 'rr': 'RR',
                 'ypr': 'YPR',
@@ -2104,7 +2123,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_g', 'pass_rtg', 'pass_imp', 'pass_imp_per_att', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'ttt', 'prs_pct', 'pass_sack', 'pass_int', 'fum'];
             const rbStatOrder = ['fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_g', 'elu', 'mtf', 'mtf_per_att', 'rush_yac', 'yco_per_att', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'rec_fd', 'first_down_rec_rate', 'yprr', 'rec_td', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             const getStatOrderForPosition = (pos) => {
                 if (pos === 'QB') return qbStatOrder;
@@ -2296,6 +2315,18 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                                 }
                                 displayValue = Number(calculatedValue).toFixed(2).replace(/\.00$/, '');
                                 break;
+                            case 'first_down_rec_rate':
+                                {
+                                    if (seasonTotals && typeof seasonTotals.first_down_rec_rate === 'number') {
+                                        calculatedValue = seasonTotals.first_down_rec_rate;
+                                    } else {
+                                        const totalRecFd = seasonTotals && typeof seasonTotals.rec_fd === 'number' ? seasonTotals.rec_fd : (aggregatedTotals['rec_fd'] || 0);
+                                        const totalRec = seasonTotals && typeof seasonTotals.rec === 'number' ? seasonTotals.rec : (aggregatedTotals['rec'] || 0);
+                                        calculatedValue = totalRec > 0 ? (totalRecFd / totalRec) : 0;
+                                    }
+                                }
+                                displayValue = Number(calculatedValue).toFixed(2);
+                                break;
                             default:
                                 {
                                     const totalValue = seasonTotals && typeof seasonTotals[statKey] === 'number' ? seasonTotals[statKey] : (aggregatedTotals[statKey] || 0);
@@ -2422,6 +2453,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     'rec_fd': 'Receiving First Downs',
                     'rec_yar': 'Yards After Catch',
                     'yprr': 'Yards per Route Run',
+                    'first_down_rec_rate': 'First Down Reception Rate',
                     'ts_per_rr': 'Targets per Route Run',
                     'rr': 'Routes Run',
                     'ypr': 'Yards per Reception',
