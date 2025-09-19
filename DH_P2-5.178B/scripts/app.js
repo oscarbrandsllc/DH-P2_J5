@@ -736,33 +736,71 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
         function parseSheetData(csvText) {
             const dataMap = {};
-            const lines = csvText.split(/\r?\n/).slice(1);
-            lines.forEach(line => {
-                const columns = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
-                if (columns.length < 13) return;
-                const clean = (str) => str ? str.replace(/"/g, '').trim() : '';
-                const pos = clean(columns[2]);
-                const sleeperId = clean(columns[12]);
-                const adp = parseFloat(clean(columns[11]));
-                const ktcValue = parseInt(clean(columns[6]), 10);
-                const posRank = clean(columns[7]);
-                const age = parseFloat(clean(columns[3])); // CORRECTED: Read age from the 4th column (index 3)
-                const overallRank = parseInt(clean(columns[0]), 10); // ADDED: Read overall rank from the 1st column (index 0)
+            const { headers, rows } = parseCsv(csvText);
+            if (!headers.length || !rows.length) return dataMap;
+
+            const normalizedHeaders = headers.map(normalizeHeader);
+            const headerIndex = new Map();
+            normalizedHeaders.forEach((header, idx) => {
+                headerIndex.set(header.toUpperCase(), idx);
+            });
+
+            const normalizeKey = (key) => normalizeHeader(key).toUpperCase();
+            const getColumnValue = (columns, names) => {
+                const keys = Array.isArray(names) ? names : [names];
+                for (const name of keys) {
+                    const idx = headerIndex.get(normalizeKey(name));
+                    if (idx !== undefined) {
+                        const value = columns[idx];
+                        if (value !== undefined) return value.trim();
+                    }
+                }
+                return '';
+            };
+
+            const toFloat = (value) => {
+                const num = parseFloat(value);
+                return Number.isNaN(num) ? null : num;
+            };
+
+            const toInt = (value) => {
+                const num = parseInt(value, 10);
+                return Number.isNaN(num) ? null : num;
+            };
+
+            rows.forEach(columns => {
+                const pos = getColumnValue(columns, 'POS');
+                const sleeperId = getColumnValue(columns, 'SLPR_ID');
+                const ktcValue = toInt(getColumnValue(columns, ['VALUE', 'KTC']));
+                const adp = toFloat(getColumnValue(columns, 'ADP'));
+                const posRank = getColumnValue(columns, ['POS·RK', 'POS RK', 'POS_RK']);
+                const age = toFloat(getColumnValue(columns, 'AGE'));
+                const overallRank = toInt(getColumnValue(columns, ['RANK', 'OVR', 'OVERALL']));
 
                 if (pos === 'RDP') {
-                    const pickName = clean(columns[1]);
-                    if (pickName) dataMap[pickName] = { adp: null, ktc: ktcValue, posRank: null, overallRank: null };
-                } else if (sleeperId && sleeperId !== 'NA') {
-                    // Add the parsed age and overall rank to the player's data object
-                    dataMap[sleeperId] = {
-                        age: isNaN(age) ? null : age,
-                        adp: isNaN(adp) ? null : adp,
-                        ktc: isNaN(ktcValue) ? null : ktcValue,
-                        posRank: posRank,
-                        overallRank: isNaN(overallRank) ? null : overallRank
-                    };
+                    const pickName = getColumnValue(columns, 'PLAYER NAME');
+                    if (pickName) {
+                        dataMap[pickName] = {
+                            adp: null,
+                            ktc: ktcValue,
+                            posRank: null,
+                            overallRank: null
+                        };
+                    }
+                    return;
                 }
+
+                if (!sleeperId || sleeperId === 'NA') return;
+
+                dataMap[sleeperId] = {
+                    age: age,
+                    adp: adp,
+                    ktc: ktcValue,
+                    posRank: posRank || null,
+                    overallRank: overallRank
+                };
             });
+
             return dataMap;
         }
 
