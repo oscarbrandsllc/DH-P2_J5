@@ -511,7 +511,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const teamName = assetRow.closest('.roster-column')?.dataset.teamName;
             if (!teamName || !state.teamsToCompare.has(teamName)) return;
 
-            const { assetId, assetLabel, assetKtc, assetPos } = assetRow.dataset;
+            const { assetId, assetLabel, assetKtc, assetPos, assetBasePos, assetTeam } = assetRow.dataset;
             if (!assetId) return;
 
             if (!state.tradeBlock[teamName]) {
@@ -528,7 +528,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     id: assetId,
                     label: assetLabel,
                     ktc: parseInt(assetKtc, 10) || 0,
-                    pos: assetPos
+                    pos: assetPos,
+                    basePos: assetBasePos || assetPos,
+                    team: assetTeam || ''
                 });
                 assetRow.classList.add('player-selected');
             }
@@ -1759,7 +1761,21 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     const assets = state.tradeBlock[teamName];
                     assets.forEach(asset => {
                         if (asset.pos !== 'DP') {
-                            selectedPlayersWithTeams.push({ ...asset, teamName });
+                            const fullPlayer = state.players[asset.id];
+                            const playerName = fullPlayer
+                                ? `${fullPlayer.first_name} ${fullPlayer.last_name}`
+                                : asset.label;
+                            const normalizedTeam = (asset.team || fullPlayer?.team || 'FA').toUpperCase();
+                            const primaryPos = (asset.basePos || fullPlayer?.position || asset.pos || '').toUpperCase();
+
+                            selectedPlayersWithTeams.push({
+                                ...asset,
+                                teamName,
+                                name: playerName,
+                                pos: primaryPos || asset.pos,
+                                displayPos: asset.pos,
+                                team: normalizedTeam
+                            });
                         }
                     });
                 }
@@ -1799,71 +1815,177 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             playerNamesRow.className = 'player-names-row';
             players.forEach(player => {
                 const fullPlayer = state.players[player.id];
-                const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
+                const playerName = player.name || (fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label);
 
                 const headerContainer = document.createElement('div');
                 headerContainer.className = 'player-name-header-container';
 
-                headerContainer.innerHTML = `
-                    <div class="player-name-header">${playerName}<br><span class="game-log-link">Game Log</span></div>
-                `;
+                const nameHeader = document.createElement('div');
+                nameHeader.className = 'player-name-header';
 
-                const gameLogLink = headerContainer.querySelector('.game-log-link');
-                gameLogLink.onclick = () => {
+                const nameButton = document.createElement('button');
+                nameButton.type = 'button';
+                nameButton.className = 'player-name-header-link';
+                nameButton.textContent = playerName;
+                nameButton.onclick = () => {
                     state.isGameLogModalOpenFromComparison = true;
-                    handlePlayerNameClick(player);
+                    const resolvedTeam = player.team || fullPlayer?.team || 'FA';
+                    const numericKtc = Number(player.ktc);
+                    const numericPosRank = Number(player.posRank);
+                    const normalizedPosRank = Number.isFinite(numericPosRank) && numericPosRank > 0
+                        ? `${player.pos}·${numericPosRank}`
+                        : (typeof player.posRank === 'string' && player.posRank
+                            ? player.posRank
+                            : (typeof fullPlayer?.posRank === 'string' ? fullPlayer.posRank : null));
+                    const mergedPlayerData = {
+                        ...player,
+                        id: player.id,
+                        name: player.name || playerName,
+                        pos: player.pos,
+                        team: resolvedTeam,
+                        ktc: Number.isFinite(numericKtc) && numericKtc > 0 ? numericKtc : null,
+                        overallRank: player.overallRank ?? fullPlayer?.overallRank ?? null,
+                        posRank: normalizedPosRank
+                    };
+                    handlePlayerNameClick(mergedPlayerData);
                 };
+                const tagsRow = document.createElement('div');
+                tagsRow.className = 'player-header-tags';
+
+                const posTag = document.createElement('div');
+                posTag.className = `player-tag modal-pos-tag ${player.pos}`;
+                posTag.textContent = player.pos;
+
+                const teamKey = (player.team || fullPlayer?.team || 'FA').toUpperCase();
+                const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
+                const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
+                const src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
+                const teamLogoChip = document.createElement('div');
+                teamLogoChip.className = 'player-tag modal-team-logo-chip';
+                if (teamKey && teamKey !== 'FA') {
+                    teamLogoChip.dataset.team = teamKey;
+                    teamLogoChip.innerHTML = `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="20" height="20" loading="lazy">`;
+                } else {
+                    teamLogoChip.innerHTML = '<span>FA</span>';
+                }
+
+                tagsRow.appendChild(posTag);
+                tagsRow.appendChild(teamLogoChip);
+
+                nameHeader.appendChild(nameButton);
+                nameHeader.appendChild(tagsRow);
+                headerContainer.appendChild(nameHeader);
 
                 playerNamesRow.appendChild(headerContainer);
             });
             container.appendChild(playerNamesRow);
         
-                // Summary Chips Row
-        const summaryChipsRow = document.createElement('div');
-        summaryChipsRow.className = 'comparison-summary-chips-row';
-        
-        players.forEach(player => {
-          const summaryChipsContainer = document.createElement('div');
-          summaryChipsContainer.className = 'summary-chips-container';
-          const overallRankDisplay = typeof player.overallRank === 'number' ? `#${player.overallRank}` : (player.overallRank || 'NA');
-          const posRankDisplay = typeof player.posRank === 'number' ? player.posRank : (player.posRank || 'NA');
-          const ppgOverallRankDisplay = typeof player.ppgOverallRank === 'number' ? `#${player.ppgOverallRank}` : (player.ppgOverallRank || 'NA');
-          const ppgPosRankDisplay = typeof player.ppgPosRank === 'number' ? player.ppgPosRank : (player.ppgPosRank || 'NA');
-          summaryChipsContainer.innerHTML = `
-            <div class="summary-chip">
-              <h4>
-                <span class="chip-header-value" style="color: ${getConditionalColorByRank(player.posRank)}">${player.total_pts} </span>
-                <span class="chip-unit"> FPTS</span>
-              </h4>
-              <div class="chip-values">
-                <span style="color: ${getRankColor(player.overallRank)}">${overallRankDisplay}</span>
-                <span class="chip-separator">•</span>
-                <span class="pos-rank-container">
-                  <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
-                  <span style="color: ${getConditionalColorByRank(player.posRank)}">${posRankDisplay}</span>
-                </span>
-              </div>
-            </div>
+            // Summary Chips Row
+            const summaryChipsRow = document.createElement('div');
+            summaryChipsRow.className = 'comparison-summary-chips-row';
 
-            <div class="summary-chip">
-              <h4>
-                <span class="chip-header-value" style="color: ${getConditionalColorByRank(player.ppgPosRank)}">${player.ppg}</span>
-                <span class="chip-unit"> PPG</span>
-              </h4>
-              <div class="chip-values">
-                <span style="color: ${getRankColor(player.ppgOverallRank)}">${ppgOverallRankDisplay}</span>
-                <span class="chip-separator">•</span>
-                <span class="pos-rank-container">
-                  <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
-                  <span style="color: ${getConditionalColorByRank(player.ppgPosRank)}">${ppgPosRankDisplay}</span>
-                </span>
-              </div>
-            </div>
-          `;
-          summaryChipsRow.appendChild(summaryChipsContainer);
-        });
-        
-        container.appendChild(summaryChipsRow);
+            players.forEach(player => {
+                const summaryChipsContainer = document.createElement('div');
+                summaryChipsContainer.className = 'summary-chips-container';
+
+                const overallRankNumber = typeof player.overallRank === 'number' ? player.overallRank : Number(player.overallRank);
+                const overallRankDisplay = Number.isFinite(overallRankNumber)
+                  ? `#${overallRankNumber}`
+                  : (player.overallRank || 'NA');
+
+                const rawPosRank = player.posRank;
+                const posRankNumber = typeof rawPosRank === 'number'
+                  ? rawPosRank
+                  : Number.parseInt(String(rawPosRank).split('·')[1] || String(rawPosRank), 10);
+                const posRankDisplay = Number.isFinite(posRankNumber)
+                  ? posRankNumber
+                  : (rawPosRank || 'NA');
+                const posRankColor = Number.isFinite(posRankNumber)
+                  ? getConditionalColorByRank(posRankNumber)
+                  : 'inherit';
+
+                const ppgOverallRankNumber = typeof player.ppgOverallRank === 'number'
+                  ? player.ppgOverallRank
+                  : Number(player.ppgOverallRank);
+                const ppgOverallRankDisplay = Number.isFinite(ppgOverallRankNumber)
+                  ? `#${ppgOverallRankNumber}`
+                  : (player.ppgOverallRank || 'NA');
+
+                const ppgPosRankNumber = typeof player.ppgPosRank === 'number'
+                  ? player.ppgPosRank
+                  : Number(player.ppgPosRank);
+                const ppgPosRankDisplay = Number.isFinite(ppgPosRankNumber)
+                  ? ppgPosRankNumber
+                  : (player.ppgPosRank || 'NA');
+                const ppgPosRankColor = Number.isFinite(ppgPosRankNumber)
+                  ? getConditionalColorByRank(ppgPosRankNumber)
+                  : 'inherit';
+
+                const numericKtcValue = Number(player.ktc);
+                const ktcValue = Number.isFinite(numericKtcValue) && numericKtcValue > 0
+                  ? numericKtcValue
+                  : null;
+                const ktcDisplay = ktcValue ?? 'NA';
+                const ktcColor = ktcValue ? getKtcColor(ktcValue) : 'var(--color-text-secondary)';
+
+                const ktcOverallRankDisplay = overallRankDisplay;
+                const ktcPosRankDisplay = Number.isFinite(posRankNumber)
+                  ? posRankNumber
+                  : (rawPosRank || 'NA');
+                const ktcPosRankColor = Number.isFinite(posRankNumber)
+                  ? getConditionalColorByRank(posRankNumber)
+                  : 'inherit';
+
+                summaryChipsContainer.innerHTML = `
+                  <div class="summary-chip">
+                    <h4>
+                      <span class="chip-header-value" style="color: ${posRankColor}">${player.total_pts}</span>
+                      <span class="chip-unit"> FPTS</span>
+                    </h4>
+                    <div class="chip-values">
+                      <span style="color: ${getRankColor(overallRankNumber)}">${overallRankDisplay}</span>
+                      <span class="chip-separator">•</span>
+                      <span class="pos-rank-container">
+                        <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                        <span style="color: ${posRankColor}">${posRankDisplay}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="summary-chip">
+                    <h4>
+                      <span class="chip-header-value" style="color: ${ppgPosRankColor}">${player.ppg}</span>
+                      <span class="chip-unit"> PPG</span>
+                    </h4>
+                    <div class="chip-values">
+                      <span style="color: ${getRankColor(ppgOverallRankNumber)}">${ppgOverallRankDisplay}</span>
+                      <span class="chip-separator">•</span>
+                      <span class="pos-rank-container">
+                        <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                        <span style="color: ${ppgPosRankColor}">${ppgPosRankDisplay}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="summary-chip">
+                    <h4>
+                      <span class="chip-header-value" style="color: ${ktcColor}">${ktcDisplay}</span>
+                      <span class="chip-unit"> KTC</span>
+                    </h4>
+                    <div class="chip-values">
+                      <span style="color: ${getRankColor(overallRankNumber)}">${ktcOverallRankDisplay}</span>
+                      <span class="chip-separator">•</span>
+                      <span class="pos-rank-container">
+                        <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                        <span style="color: ${ktcPosRankColor}">${ktcPosRankDisplay}</span>
+                      </span>
+                    </div>
+                  </div>
+                `;
+                summaryChipsRow.appendChild(summaryChipsContainer);
+            });
+
+            container.appendChild(summaryChipsRow);
 
 
             // Detailed Stats Table
@@ -1883,7 +2005,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
                 const th = document.createElement('th');
                 th.className = 'player-header';
-                th.innerHTML = `<h4>${playerName}</h4><span class="player-pos-team">${player.pos} - ${fullPlayer.team || 'FA'}</span>`;
+                th.innerHTML = `<h4>${playerName}</h4>`;
                 tr.appendChild(th);
             });
             thead.appendChild(tr);
@@ -2453,6 +2575,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             row.dataset.assetLabel = player.name;
             row.dataset.assetKtc = player.ktc || 0;
             row.dataset.assetPos = displaySlot;
+            row.dataset.assetBasePos = (player.pos || displaySlot || '').toUpperCase();
+            row.dataset.assetTeam = (player.team || 'FA').toUpperCase();
 
             if (state.tradeBlock[teamName]?.find(a => a.id === player.id)) {
                 row.classList.add('player-selected');
@@ -2981,7 +3105,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     const tradePreviewRect = tradePreview.getBoundingClientRect();
 
                     const topPosition = headerRect.bottom + 10;
-                    const availableHeight = tradePreviewRect.top - topPosition - 10;
+                    const spacingAdjustment = 6;
+                    const availableHeight = tradePreviewRect.top - topPosition - spacingAdjustment;
 
                     modalContent.style.top = `${topPosition}px`;
                     modalContent.style.height = `${availableHeight}px`;
