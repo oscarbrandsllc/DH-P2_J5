@@ -1804,15 +1804,50 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const headerContainer = document.createElement('div');
                 headerContainer.className = 'player-name-header-container';
 
-                headerContainer.innerHTML = `
-                    <div class="player-name-header">${playerName}<br><span class="game-log-link">Game Log</span></div>
-                `;
+                const nameHeader = document.createElement('div');
+                nameHeader.className = 'player-name-header';
 
-                const gameLogLink = headerContainer.querySelector('.game-log-link');
-                gameLogLink.onclick = () => {
+                const nameLink = document.createElement('span');
+                nameLink.className = 'comparison-player-name-link';
+                nameLink.textContent = playerName;
+                nameLink.tabIndex = 0;
+                nameLink.addEventListener('click', () => {
                     state.isGameLogModalOpenFromComparison = true;
                     handlePlayerNameClick(player);
-                };
+                });
+                nameLink.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        state.isGameLogModalOpenFromComparison = true;
+                        handlePlayerNameClick(player);
+                    }
+                });
+
+                nameHeader.appendChild(nameLink);
+                headerContainer.appendChild(nameHeader);
+
+                const tagRow = document.createElement('div');
+                tagRow.className = 'player-info-tags';
+
+                const posTag = document.createElement('div');
+                posTag.className = `player-tag modal-pos-tag comparison-pos-tag ${player.pos}`;
+                posTag.textContent = player.pos;
+                tagRow.appendChild(posTag);
+
+                const teamKey = (player.team || 'FA').toUpperCase();
+                const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
+                const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
+                const src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
+
+                const teamLogoChip = document.createElement('div');
+                teamLogoChip.className = 'player-tag modal-team-logo-chip comparison-team-logo-chip';
+                teamLogoChip.dataset.team = teamKey;
+                teamLogoChip.innerHTML = (player.team && player.team !== 'FA')
+                    ? `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="20" height="20" loading="lazy">`
+                    : `<span>FA</span>`;
+                tagRow.appendChild(teamLogoChip);
+
+                headerContainer.appendChild(tagRow);
 
                 playerNamesRow.appendChild(headerContainer);
             });
@@ -1883,7 +1918,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
                 const th = document.createElement('th');
                 th.className = 'player-header';
-                th.innerHTML = `<h4>${playerName}</h4><span class="player-pos-team">${player.pos} - ${fullPlayer.team || 'FA'}</span>`;
+                th.innerHTML = `<h4>${playerName}</h4>`;
                 tr.appendChild(th);
             });
             thead.appendChild(tr);

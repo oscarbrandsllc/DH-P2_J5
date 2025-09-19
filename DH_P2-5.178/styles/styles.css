@@ -2881,6 +2881,45 @@ font-weight: 500 !important;
         color: var(--color-text-primary);
         line-height: 1.1;
     }
+
+    #player-comparison-modal .comparison-player-name-link {
+        color: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        outline: none;
+    }
+
+    #player-comparison-modal .comparison-player-name-link:hover,
+    #player-comparison-modal .comparison-player-name-link:focus {
+        color: var(--color-text-secondary);
+    }
+
+    #player-comparison-modal .player-info-tags {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.35rem;
+    }
+
+    #player-comparison-modal .comparison-pos-tag {
+        font-size: 0.75rem;
+        line-height: 0.75rem;
+        padding: 3px 7px;
+    }
+
+    #player-comparison-modal .comparison-team-logo-chip {
+        padding: 2px 6px;
+    }
+
+    #player-comparison-modal .comparison-team-logo-chip img.team-logo {
+        width: 20px;
+        height: 20px;
+    }
+
+    #player-comparison-modal .comparison-team-logo-chip span {
+        font-size: 0.7rem;
+    }
     
     #close-comparison-key {
         cursor: pointer;
@@ -2901,7 +2940,7 @@ font-weight: 500 !important;
         justify-content: center;
         gap: 1rem;
         flex-wrap: wrap;
-        padding: 0.5rem 0;
+        padding: 0.35rem 0;
         border-top: 1px solid var(--color-panel-border);
         border-bottom: 1px solid var(--color-panel-border);
     }
@@ -2971,7 +3010,7 @@ font-weight: 500 !important;
         
         /* · · Summary Chips · · */
     #player-comparison-modal .summary-chip {
-        padding: 0.3rem 0.9rem; /* Further reduced padding */
+        padding: 0.22rem 0.85rem; /* Further reduced padding */
         text-align: center;
         min-width: auto;
         position: relative;
