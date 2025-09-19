@@ -2297,7 +2297,8 @@ font-weight: 500 !important;
     
     .modal-close-btn {
       position: absolute;
-      top: 0.10rem;
+  top: 50%;
+  transform: translateY(-50%);
       right: 0.75rem;
       background: none;
       border: none;
@@ -3100,11 +3101,19 @@ font-weight: 500 !important;
     
     /* · · Page Header & Link · · */
     
+#comparison-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0.5rem 0;
+}
+
     #comparison-modal-header h3 {
         text-align: center;
         vertical-align: middle;
         font-weight: 400;
-        margin-bottom: 1px;
+        margin: 0;
     }
     
     .game-log-link {
