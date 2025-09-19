@@ -363,22 +363,85 @@
             
             function parseSheetData(csvText) {
                 const dataMap = {};
-                const lines = csvText.split(/\r?\n/).slice(1);
-                lines.forEach(line => {
-                    const columns = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
-                    if (columns.length < 13) return;
-                    const clean = (str) => str ? str.replace(/"/g, '').trim() : '';
-                    const pos = clean(columns[2]);
-                    const sleeperId = clean(columns[12]);
-                    const ktcValue = parseInt(clean(columns[6]), 10);
+                const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+                if (lines.length === 0) return dataMap;
+
+                const parseLine = (line) => {
+                    const result = [];
+                    let current = '';
+                    let inQuotes = false;
+                    const sanitized = line.replace(/\r$/, '');
+
+                    for (let i = 0; i < sanitized.length; i++) {
+                        const char = sanitized[i];
+                        if (inQuotes) {
+                            if (char === '"') {
+                                if (sanitized[i + 1] === '"') {
+                                    current += '"';
+                                    i++;
+                                } else {
+                                    inQuotes = false;
+                                }
+                            } else {
+                                current += char;
+                            }
+                        } else if (char === '"') {
+                            inQuotes = true;
+                        } else if (char === ',') {
+                            result.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    result.push(current.trim());
+                    return result;
+                };
+
+                const normalize = (header) => header.replace(/[\u00a0\u202f]/g, ' ').trim().toUpperCase();
+                const headers = parseLine(lines[0]).map(cell => cell.trim());
+                const headerIndex = new Map();
+                headers.forEach((header, idx) => {
+                    headerIndex.set(normalize(header), idx);
+                });
+
+                const getValue = (columns, names) => {
+                    const keys = Array.isArray(names) ? names : [names];
+                    for (const name of keys) {
+                        const idx = headerIndex.get(normalize(name));
+                        if (idx !== undefined && columns[idx] !== undefined) {
+                            return columns[idx].trim();
+                        }
+                    }
+                    return '';
+                };
+
+                const toInt = (value) => {
+                    const num = parseInt(value, 10);
+                    return Number.isNaN(num) ? null : num;
+                };
+
+                lines.slice(1).forEach(line => {
+                    const columns = parseLine(line);
+                    if (!columns.length) return;
+
+                    const pos = getValue(columns, 'POS');
+                    const sleeperId = getValue(columns, 'SLPR_ID');
+                    const ktcValue = toInt(getValue(columns, ['VALUE', 'KTC']));
 
                     if (pos === 'RDP') {
-                        const pickName = clean(columns[1]);
-                        if (pickName) dataMap[pickName] = { ktc: ktcValue };
-                    } else if (sleeperId && sleeperId !== 'NA') {
-                        dataMap[sleeperId] = { ktc: isNaN(ktcValue) ? 0 : ktcValue };
+                        const pickName = getValue(columns, 'PLAYER NAME');
+                        if (pickName) {
+                            dataMap[pickName] = { ktc: ktcValue };
+                        }
+                        return;
                     }
+
+                    if (!sleeperId || sleeperId === 'NA') return;
+
+                    dataMap[sleeperId] = { ktc: ktcValue ?? 0 };
                 });
+
                 return dataMap;
             }
 
