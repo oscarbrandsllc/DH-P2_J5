@@ -1350,8 +1350,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
         // --- UI Rendering ---
         async function handlePlayerNameClick(player) {
-            const fullPlayer = state.players[player.id];
-            const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.name;
+            if (!player) return;
+
+            const playerId = player.id || player.player_id;
+            if (!playerId) return;
+
+            const fullPlayer = state.players[playerId];
+            const fallbackName = player.name || player.label || player.full_name || player.fullName || 'Player';
+            const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}`.trim() : fallbackName;
 
             modalPlayerName.textContent = `${playerName}`;
             document.getElementById('modal-summary-chips').innerHTML = ''; // Clear previous chips
@@ -1364,38 +1370,51 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             }
             openModal();
 
-            const gameLogs = await fetchGameLogs(player.id);
-            const playerRanks = calculatePlayerStatsAndRanks(player.id);
-            renderGameLogs(gameLogs, player, playerRanks);
+            const enrichedPlayer = {
+                ...player,
+                id: playerId,
+                name: playerName,
+                team: player.team || fullPlayer?.team || fullPlayer?.metadata?.team,
+                pos: player.pos || fullPlayer?.position || fullPlayer?.fantasy_positions?.[0],
+            };
+            const gameLogs = await fetchGameLogs(playerId);
+            const playerRanks = calculatePlayerStatsAndRanks(playerId);
+            renderGameLogs(gameLogs, enrichedPlayer, playerRanks, fullPlayer);
         }
 
-        function renderGameLogs(gameLogs, player, playerRanks) {
+        function renderGameLogs(gameLogs, player, playerRanks, fullPlayerOverride = null) {
             const league = state.leagues.find(l => l.league_id === state.currentLeagueId);
             if (!league) return;
             const scoringSettings = league.scoring_settings;
 
-            const fullPlayer = state.players[player.id];
-            const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.name;
+            const playerId = player?.id || player?.player_id;
+            const fullPlayer = fullPlayerOverride || (playerId ? state.players[playerId] : null);
+            const fallbackName = player.name || player.label || player.full_name || player.fullName || 'Player';
+            const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}`.trim() : fallbackName;
 
             const modalHeader = document.getElementById('modal-header');
             const headerContainer = document.createElement('div');
             headerContainer.className = 'modal-header-left-container';
 
             const posTag = document.createElement('div');
-            posTag.className = `player-tag modal-pos-tag ${player.pos}`;
-            posTag.textContent = player.pos;
+            const primaryPos = (fullPlayer?.position || fullPlayer?.fantasy_positions?.[0] || player.pos || 'FA');
+            posTag.className = `player-tag modal-pos-tag ${primaryPos}`;
+            posTag.textContent = primaryPos;
             headerContainer.appendChild(posTag);
 
-            const teamKey = (player.team || 'FA').toUpperCase();
+            const teamSource = player.team || fullPlayer?.team || fullPlayer?.metadata?.team || 'FA';
+            const teamKey = (teamSource || 'FA').toUpperCase();
             const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
             const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
             const src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
             const teamLogoChip = document.createElement('div');
             teamLogoChip.className = 'player-tag modal-team-logo-chip';
-            teamLogoChip.dataset.team = teamKey;
-            teamLogoChip.innerHTML = (player.team && player.team !== 'FA')
-              ? `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="24" height="24" loading="lazy">`
-              : `<span>FA</span>`;
+            if (teamKey && teamKey !== 'FA') {
+                teamLogoChip.dataset.team = teamKey;
+                teamLogoChip.innerHTML = `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="24" height="24" loading="lazy">`;
+            } else {
+                teamLogoChip.innerHTML = '<span>FA</span>';
+            }
             headerContainer.appendChild(teamLogoChip);
             modalHeader.insertBefore(headerContainer, modalHeader.firstChild);
 
@@ -1778,10 +1797,23 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             openComparisonModal();
 
             const playerData = await Promise.all(selectedPlayersWithTeams.map(async (player) => {
+                const basePlayer = state.players[player.id] || null;
+                const primaryPosition = basePlayer?.position || basePlayer?.fantasy_positions?.[0] || player.pos || 'FA';
+                const teamAbbr = basePlayer?.team || basePlayer?.metadata?.team || player.team || 'FA';
+                const displayName = basePlayer ? `${basePlayer.first_name} ${basePlayer.last_name}`.trim() : (player.name || player.label || '');
+
                 const gameLogs = await fetchGameLogs(player.id);
                 const playerRanks = calculatePlayerStatsAndRanks(player.id);
                 const seasonStats = state.playerSeasonStats?.[player.id] || null;
-                return { ...player, gameLogs, seasonStats, ...playerRanks };
+                return {
+                    ...player,
+                    name: displayName,
+                    pos: primaryPosition,
+                    team: teamAbbr,
+                    gameLogs,
+                    seasonStats,
+                    ...playerRanks,
+                };
             }));
 
             renderPlayerComparison(playerData);
@@ -1799,20 +1831,50 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             playerNamesRow.className = 'player-names-row';
             players.forEach(player => {
                 const fullPlayer = state.players[player.id];
-                const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
+                const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : (player.name || player.label);
 
                 const headerContainer = document.createElement('div');
                 headerContainer.className = 'player-name-header-container';
 
-                headerContainer.innerHTML = `
-                    <div class="player-name-header">${playerName}<br><span class="game-log-link">Game Log</span></div>
-                `;
+                const nameHeader = document.createElement('div');
+                nameHeader.className = 'player-name-header';
 
-                const gameLogLink = headerContainer.querySelector('.game-log-link');
-                gameLogLink.onclick = () => {
+                const nameButton = document.createElement('button');
+                nameButton.type = 'button';
+                nameButton.className = 'player-name-header-link';
+                nameButton.textContent = playerName;
+                nameButton.onclick = () => {
                     state.isGameLogModalOpenFromComparison = true;
                     handlePlayerNameClick(player);
                 };
+
+                const tagsRow = document.createElement('div');
+                tagsRow.className = 'player-header-tags';
+
+                const resolvedPosition = fullPlayer?.position || fullPlayer?.fantasy_positions?.[0] || player.pos || 'FA';
+                const posTag = document.createElement('div');
+                posTag.className = `player-tag modal-pos-tag ${resolvedPosition}`;
+                posTag.textContent = resolvedPosition;
+
+                const teamKey = (player.team || fullPlayer?.team || fullPlayer?.metadata?.team || 'FA').toUpperCase();
+                const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
+                const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
+                const src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
+                const teamLogoChip = document.createElement('div');
+                teamLogoChip.className = 'player-tag modal-team-logo-chip';
+                if (teamKey && teamKey !== 'FA') {
+                    teamLogoChip.dataset.team = teamKey;
+                    teamLogoChip.innerHTML = `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="20" height="20" loading="lazy">`;
+                } else {
+                    teamLogoChip.innerHTML = '<span>FA</span>';
+                }
+
+                tagsRow.appendChild(posTag);
+                tagsRow.appendChild(teamLogoChip);
+
+                nameHeader.appendChild(nameButton);
+                nameHeader.appendChild(tagsRow);
+                headerContainer.appendChild(nameHeader);
 
                 playerNamesRow.appendChild(headerContainer);
             });
@@ -1883,7 +1945,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.label;
                 const th = document.createElement('th');
                 th.className = 'player-header';
-                th.innerHTML = `<h4>${playerName}</h4><span class="player-pos-team">${player.pos} - ${fullPlayer.team || 'FA'}</span>`;
+                th.innerHTML = `<h4>${playerName}</h4>`;
                 tr.appendChild(th);
             });
             thead.appendChild(tr);
