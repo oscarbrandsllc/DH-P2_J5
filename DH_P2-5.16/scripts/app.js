@@ -745,17 +745,19 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const ktcValue = parseInt(clean(columns[6]), 10);
                 const posRank = clean(columns[7]);
                 const age = parseFloat(clean(columns[3])); // CORRECTED: Read age from the 4th column (index 3)
+                const overallRank = parseInt(clean(columns[0]), 10); // ADDED: Read overall rank from the 1st column (index 0)
 
                 if (pos === 'RDP') {
                     const pickName = clean(columns[1]);
-                    if (pickName) dataMap[pickName] = { adp: null, ktc: ktcValue, posRank: null };
+                    if (pickName) dataMap[pickName] = { adp: null, ktc: ktcValue, posRank: null, overallRank: null };
                 } else if (sleeperId && sleeperId !== 'NA') {
-                    // Add the parsed age to the player's data object
+                    // Add the parsed age and overall rank to the player's data object
                     dataMap[sleeperId] = {
                         age: isNaN(age) ? null : age,
                         adp: isNaN(adp) ? null : adp,
                         ktc: isNaN(ktcValue) ? null : ktcValue,
-                        posRank: posRank
+                        posRank: posRank,
+                        overallRank: isNaN(overallRank) ? null : overallRank
                     };
                 }
             });
@@ -1325,7 +1327,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 adp: valueData?.adp || null, 
                 ktc: valueData?.ktc || null, 
                 slot, 
-                posRank: valueData?.posRank || null 
+                posRank: valueData?.posRank || null,
+                overallRank: valueData?.overallRank || null
             };
         }
 
@@ -1352,8 +1355,8 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             modalPlayerName.textContent = `${playerName}`;
             document.getElementById('modal-summary-chips').innerHTML = ''; // Clear previous chips
-            const existingTag = document.querySelector('.modal-pos-tag');
-            if(existingTag) existingTag.remove();
+            const existingHeaderContainer = document.querySelector('.modal-header-left-container');
+            if(existingHeaderContainer) existingHeaderContainer.remove();
             modalBody.innerHTML = '<p class="text-center p-4">Loading game logs...</p>';
 
             if (state.isGameLogModalOpenFromComparison) {
@@ -1375,88 +1378,72 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             const playerName = fullPlayer ? `${fullPlayer.first_name} ${fullPlayer.last_name}` : player.name;
 
             const modalHeader = document.getElementById('modal-header');
+            const headerContainer = document.createElement('div');
+            headerContainer.className = 'modal-header-left-container';
+
             const posTag = document.createElement('div');
             posTag.className = `player-tag modal-pos-tag ${player.pos}`;
             posTag.textContent = player.pos;
-            modalHeader.insertBefore(posTag, modalHeader.firstChild);
+            headerContainer.appendChild(posTag);
+
+            const teamKey = (player.team || 'FA').toUpperCase();
+            const logoKeyMap = { 'WSH': 'was', 'WAS': 'was', 'JAC': 'jax', 'LA': 'lar' };
+            const normalizedKey = logoKeyMap[teamKey] || teamKey.toLowerCase();
+            const src = `../assets/NFL-Tags_webp/${normalizedKey}.webp`;
+            const teamLogoChip = document.createElement('div');
+            teamLogoChip.className = 'player-tag modal-team-logo-chip';
+            teamLogoChip.innerHTML = (player.team && player.team !== 'FA')
+              ? `<img class="team-logo glow" src="${src}" alt="${teamKey}" width="24" height="24" loading="lazy">`
+              : `<span>FA</span>`;
+            headerContainer.appendChild(teamLogoChip);
+            modalHeader.insertBefore(headerContainer, modalHeader.firstChild);
 
             // Render summary chips
             const summaryChipsContainer = document.getElementById('modal-summary-chips');
             summaryChipsContainer.innerHTML = `
-                <div class="summary-chip">
-                    <h4>FPTS / PPG</h4>
+                <div class="gamelogs-summary-chip">
+                    <h4>
+                        <span class="chip-header-value" style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.total_pts} </span>
+                        <span class="chip-unit"> FPTS</span>
+                    </h4>
                     <div class="chip-values">
-                        <span style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.total_pts}</span>
-                        <span class="chip-separator">/</span>
-                        <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
+                        <span style="color: ${getRankColor(playerRanks.overallRank)}">${typeof playerRanks.overallRank === 'number' ? '#' + playerRanks.overallRank : 'NA'}</span>
+                        <span class="chip-separator">•</span>
+                        <span class="pos-rank-container">
+                            <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                            <span style="color: ${getConditionalColorByRank(playerRanks.posRank)}">${playerRanks.posRank || 'NA'}</span>
+                        </span>
                     </div>
                 </div>
-                <div class="summary-chip">
-                    <h4>FPTS RKs</h4>
-                    <div class="chip-values"></div>
+                <div class="gamelogs-summary-chip">
+                    <h4>
+                        <span class="chip-header-value" style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppg}</span>
+                        <span class="chip-unit"> PPG</span>
+                    </h4>
+                    <div class="chip-values">
+                        <span style="color: ${getRankColor(playerRanks.ppgOverallRank)}">${typeof playerRanks.ppgOverallRank === 'number' ? '#' + playerRanks.ppgOverallRank : 'NA'}</span>
+                        <span class="chip-separator">•</span>
+                        <span class="pos-rank-container">
+                            <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                            <span style="color: ${getConditionalColorByRank(playerRanks.ppgPosRank)}">${playerRanks.ppgPosRank || 'NA'}</span>
+                        </span>
+                    </div>
                 </div>
-                <div class="summary-chip">
-                    <h4>PPG RKs</h4>
-                    <div class="chip-values"></div>
+                <div class="gamelogs-summary-chip">
+                    <h4>
+                        <span class="chip-header-value" style="color: ${getKtcColor(player.ktc)}">${player.ktc}</span>
+                        <span class="chip-unit"> KTC</span>
+                    </h4>
+                    <div class="chip-values">
+                        <span style="color: ${getRankColor(player.overallRank)}">${typeof player.overallRank === 'number' ? '#' + player.overallRank : 'NA'}</span>
+                        <span class="chip-separator">•</span>
+                        <span class="pos-rank-container">
+                            <span class="chip-pos-rank-label pos-color-${player.pos}">${player.pos}·</span>
+                            <span style="color: ${getConditionalColorByRank(parseInt(player.posRank?.split('·')[1], 10))}">${player.posRank?.split('·')[1] || 'NA'}</span>
+                        </span>
+                    </div>
                 </div>
             `;
-
-            const fptsValues = summaryChipsContainer.children[1].querySelector('.chip-values');
-            const ppgValues = summaryChipsContainer.children[2].querySelector('.chip-values');
-
-            // Populate FPTS RKs chip
-            if (playerRanks.overallRank === 'NA') {
-                fptsValues.innerHTML = '<span>NA</span>';
-            } else {
-                const overallRankSpan = document.createElement('span');
-                overallRankSpan.style.color = getRankColor(playerRanks.overallRank);
-                overallRankSpan.textContent = `#${playerRanks.overallRank}`;
-
-                const separatorSpan = document.createElement('span');
-                separatorSpan.className = 'chip-separator';
-                separatorSpan.textContent = ' / ';
-
-                const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
-
-                const posTextSpan = document.createElement('span');
-                posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
-                posTextSpan.textContent = `${player.pos}·`;
-
-                const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getConditionalColorByRank(playerRanks.posRank);
-                posRankSpan.textContent = playerRanks.posRank;
-
-                posRankContainer.append(posTextSpan, posRankSpan);
-                fptsValues.append(overallRankSpan, separatorSpan, posRankContainer);
-            }
-
-            // Populate PPG RKs chip
-            if (playerRanks.ppgOverallRank === 'NA') {
-                ppgValues.innerHTML = '<span>NA</span>';
-            } else {
-                const overallRankSpan = document.createElement('span');
-                overallRankSpan.style.color = getRankColor(playerRanks.ppgOverallRank);
-                overallRankSpan.textContent = `#${playerRanks.ppgOverallRank}`;
-
-                const separatorSpan = document.createElement('span');
-                separatorSpan.className = 'chip-separator';
-                separatorSpan.textContent = ' / ';
-
-                const posRankContainer = document.createElement('span');
-                posRankContainer.className = 'pos-rank-container';
-
-                const posTextSpan = document.createElement('span');
-                posTextSpan.className = `chip-pos-rank-label pos-color-${player.pos}`;
-                posTextSpan.textContent = `${player.pos}·`;
-
-                const posRankSpan = document.createElement('span');
-                posRankSpan.style.color = getConditionalColorByRank(playerRanks.ppgPosRank);
-                posRankSpan.textContent = `${playerRanks.ppgPosRank}`;
-
-                posRankContainer.append(posTextSpan, posRankSpan);
-                ppgValues.append(overallRankSpan, separatorSpan, posRankContainer);
-            }
 
             modalBody.innerHTML = ''; // Clear existing content
 
@@ -1622,7 +1609,9 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 const tfoot = document.createElement('tfoot');
                 const footerRow = document.createElement('tr');
                 const totalTh = document.createElement('th');
-                totalTh.textContent = 'Total';
+                totalTh.className = 'modal-table-footer-label';
+                const gamesPlayed = state.playerSeasonStats?.[player.id]?.games_played ?? '0';
+                totalTh.innerHTML = `Season<br><span class="gp-label">GP: ${gamesPlayed}</span>`;
                 footerRow.appendChild(totalTh);
 
                 const seasonTotals = state.playerSeasonStats?.[player.id] || null;
