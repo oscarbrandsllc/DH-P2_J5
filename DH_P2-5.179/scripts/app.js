@@ -870,6 +870,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
             'RR': 'rr',
             'TS%RR': 'ts_per_rr',
             'YPRR': 'yprr',
+            '1DRR': 'first_down_rec_rate',
             'IMP': 'imp',
             'FUM': 'fum',
             'SNP%': 'snp_pct'
@@ -1528,6 +1529,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_fd': 'rec1D',
                 'rec_yar': 'YAC',
                 'yprr': 'YPRR',
+                'first_down_rec_rate': '1DRR',
                 'ts_per_rr': 'TS%RR',
                 'rr': 'RR',
                 'ypr': 'YPR',
@@ -1537,7 +1539,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_g', 'pass_rtg', 'pass_imp', 'pass_imp_per_att', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'ttt', 'prs_pct', 'pass_sack', 'pass_int', 'fum'];
             const rbStatOrder = ['fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_g', 'elu', 'mtf', 'mtf_per_att', 'rush_yac', 'yco_per_att', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'first_down_rec_rate', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             let orderedStatKeys;
             if (player.pos === 'QB') orderedStatKeys = qbStatOrder;
@@ -2092,6 +2094,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                 'rec_fd': 'rec1D',
                 'rec_yar': 'YAC',
                 'yprr': 'YPRR',
+                'first_down_rec_rate': '1DRR',
                 'ts_per_rr': 'TS%RR',
                 'rr': 'RR',
                 'ypr': 'YPR',
@@ -2422,6 +2425,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     'rec_fd': 'Receiving First Downs',
                     'rec_yar': 'Yards After Catch',
                     'yprr': 'Yards per Route Run',
+                    'first_down_rec_rate': 'First Down Reception Rate',
                     'ts_per_rr': 'Targets per Route Run',
                     'rr': 'Routes Run',
                     'ypr': 'Yards per Reception',
