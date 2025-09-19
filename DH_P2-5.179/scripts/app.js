@@ -1539,7 +1539,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_g', 'pass_rtg', 'pass_imp', 'pass_imp_per_att', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'ttt', 'prs_pct', 'pass_sack', 'pass_int', 'fum'];
             const rbStatOrder = ['fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_g', 'elu', 'mtf', 'mtf_per_att', 'rush_yac', 'yco_per_att', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'first_down_rec_rate', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'rec_td', 'rec_fd', 'first_down_rec_rate', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             let orderedStatKeys;
             if (player.pos === 'QB') orderedStatKeys = qbStatOrder;
@@ -1600,6 +1600,14 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                             value = routes > 0 ? (targets / routes) * 100 : 0;
                         }
                     }
+                    else if (key === 'first_down_rec_rate') {
+                        if (typeof weekStats.stats[key] === 'number') value = weekStats.stats[key];
+                        else {
+                            const receptions = weekStats.stats['rec'] || 0;
+                            const firstDowns = weekStats.stats['rec_fd'] || 0;
+                            value = receptions > 0 ? (firstDowns / receptions) * 100 : 0;
+                        }
+                    }
                     else if (key === 'yprr') {
                         if (typeof weekStats.stats[key] === 'number') value = weekStats.stats[key];
                         else {
@@ -1630,7 +1638,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                     if (typeof value !== 'number') displayValue = value || '0';
                     else if (key === 'yco_per_att') displayValue = value.toFixed(2);
                     else if (key === 'mtf_per_att' || key === 'ypc' || key === 'ttt' || key === 'ypr' || key === 'yprr') displayValue = value.toFixed(2);
-                    else if (key === 'pass_imp_per_att' || key === 'prs_pct' || key === 'snp_pct' || key === 'ts_per_rr') displayValue = formatPercentage(value);
+                    else if (key === 'pass_imp_per_att' || key === 'prs_pct' || key === 'snp_pct' || key === 'ts_per_rr' || key === 'first_down_rec_rate') displayValue = formatPercentage(value);
                     else displayValue = value.toFixed(2).replace(/\.00$/, '');
 
                     const td = document.createElement('td');
@@ -2107,7 +2115,7 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
 
             const qbStatOrder = ['fpts', 'pass_att', 'pass_cmp', 'pass_yd', 'pass_td', 'pass_fd', 'imp_per_g', 'pass_rtg', 'pass_imp', 'pass_imp_per_att', 'rush_yd', 'rush_td', 'rush_att', 'ypc', 'ttt', 'prs_pct', 'pass_sack', 'pass_int', 'fum'];
             const rbStatOrder = ['fpts', 'snp_pct', 'rush_att', 'rush_yd', 'ypc', 'rush_td', 'rush_fd', 'imp_per_g', 'elu', 'mtf', 'mtf_per_att', 'rush_yac', 'yco_per_att', 'rec_tgt', 'rec', 'rec_yd', 'rec_td', 'rec_fd', 'rec_yar', 'fum'];
-            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'first_down_rec_rate', 'rec_td', 'rec_fd', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
+            const wrTeStatOrder = ['fpts', 'snp_pct', 'rec_tgt', 'rec', 'ts_per_rr', 'rec_yd', 'yprr', 'rec_td', 'rec_fd', 'first_down_rec_rate', 'rec_yar', 'ypr', 'imp_per_g', 'rr', 'rush_att', 'rush_yd', 'rush_td', 'ypc', 'fum'];
 
             const getStatOrderForPosition = (pos) => {
                 if (pos === 'QB') return qbStatOrder;
@@ -2283,6 +2291,18 @@ function showLegend(){ try{ document.getElementById('legend-section')?.classList
                                         const totalRoutes = seasonTotals && typeof seasonTotals.rr === 'number' ? seasonTotals.rr : (aggregatedTotals['rr'] || 0);
                                         const totalTargets = seasonTotals && typeof seasonTotals.rec_tgt === 'number' ? seasonTotals.rec_tgt : (aggregatedTotals['rec_tgt'] || 0);
                                         calculatedValue = totalRoutes > 0 ? (totalTargets / totalRoutes) * 100 : 0;
+                                    }
+                                }
+                                displayValue = formatPercentage(calculatedValue);
+                                break;
+                            case 'first_down_rec_rate':
+                                {
+                                    if (seasonTotals && typeof seasonTotals.first_down_rec_rate === 'number') {
+                                        calculatedValue = seasonTotals.first_down_rec_rate;
+                                    } else {
+                                        const totalReceptions = seasonTotals && typeof seasonTotals.rec === 'number' ? seasonTotals.rec : (aggregatedTotals['rec'] || 0);
+                                        const totalFirstDowns = seasonTotals && typeof seasonTotals.rec_fd === 'number' ? seasonTotals.rec_fd : (aggregatedTotals['rec_fd'] || 0);
+                                        calculatedValue = totalReceptions > 0 ? (totalFirstDowns / totalReceptions) * 100 : 0;
                                     }
                                 }
                                 displayValue = formatPercentage(calculatedValue);
